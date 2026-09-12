@@ -66,7 +66,7 @@ var SITE_CONFIG = {
   creditos: "Catálogo desenvolvido por WSARAMAGO",
   // Se preencher um link aqui (WhatsApp, Instagram etc.), a assinatura acima
   // vira um link clicável. Deixe "" para aparecer só como texto.
-  creditosLink: "34998708577",
+  creditosLink: "https://wa.me/message/A7BOFCT2SGZOH1",
 
   // Trava simples de acesso ao admin.html (NÃO é segurança de verdade --
   // é só pra evitar que alguém que ache o link mexa sem querer no painel.
