@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<title id="titulo-aba-admin">Painel de Produtos - Topmix</title>
+<script>
+(function () {
+  "use strict";
+  if (typeof SITE_CONFIG === "undefined") return;
+  if (SITE_CONFIG.cores) {
+    Object.keys(SITE_CONFIG.cores).forEach(function (chave) {
+      document.documentElement.style.setProperty("--" + chave, SITE_CONFIG.cores[chave]);
+    });
+  }
+  if (SITE_CONFIG.nome) document.title = "Painel de Produtos - " + SITE_CONFIG.nome;
+})();
+</script>
+<style>
+  :root{
+    --navy-900:#141b28; --navy-800:#1f2a38; --navy-600:#4a5467;
+    --gray-100:#f6f7f9; --gray-200:#e7ebf0; --gray-400:#94a3b8;
+    --gold:#ffd035; --orange:#ff801a; --white:#fff;
+    --green:#1ebe5b; --red:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--gray-100);color:var(--navy-800);}
+  header{background:var(--navy-800);color:var(--white);padding:1rem 1.25rem;}
+  header h1{margin:0;font-size:1.15rem;}
+  header p{margin:.3rem 0 0;color:#c7cdd6;font-size:.85rem;}
+
+  .barra{
+    position:sticky;top:0;z-index:10;background:var(--white);border-bottom:1px solid var(--gray-200);
+    padding:.9rem 1.25rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;
+  }
+  .barra input[type="search"]{
+    flex:1;min-width:200px;padding:.55rem .8rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.9rem;
+  }
+  .barra .contador{font-size:.82rem;color:var(--navy-600);font-weight:600;white-space:nowrap;}
+  .barra select{padding:.5rem .6rem;border:1.5px solid var(--gray-200);border-radius:7px;font-size:.85rem;background:var(--white);color:var(--navy-800);}
+  thead th.ordenavel{cursor:pointer;user-select:none;}
+  thead th.ordenavel:hover{color:var(--navy-800);}
+  thead th .seta-ordenacao{margin-left:.25rem;color:var(--orange);}
+  button{cursor:pointer;font-family:inherit;border:none;border-radius:7px;font-weight:700;font-size:.85rem;padding:.6rem 1rem;}
+  .btn-add{background:var(--navy-800);color:var(--white);}
+  .btn-cat{background:var(--white);color:var(--navy-800);border:1.5px solid var(--gray-200) !important;}
+  .btn-cat:hover{border-color:var(--orange) !important;}
+  .btn-baixar{background:linear-gradient(90deg,var(--orange),var(--gold));color:var(--navy-900);}
+  .btn-baixar:hover, .btn-add:hover{filter:brightness(1.08);}
+  .btn-importar{background:var(--white);color:var(--navy-800);border:1.5px solid var(--gray-200) !important;}
+  .btn-importar:hover{border-color:var(--orange) !important;}
+  tbody tr.linha-atualizada{background:#eaf4ff;}
+  #tela-bloqueio{position:fixed;inset:0;background:var(--navy-900);display:flex;align-items:center;justify-content:center;z-index:9999;}
+  .caixa-bloqueio{background:var(--white);color:var(--navy-900);padding:2rem;border-radius:var(--radius);max-width:320px;width:90%;text-align:center;box-shadow:0 10px 28px rgba(0,0,0,.3);}
+  .caixa-bloqueio h2{margin:0 0 .3rem;font-size:1.15rem;}
+  .caixa-bloqueio p{margin:.2rem 0;font-size:.85rem;color:var(--navy-600);}
+  .caixa-bloqueio input{width:100%;padding:.6rem;margin:.9rem 0 .5rem;border:1.5px solid var(--gray-200);border-radius:8px;font-size:1rem;}
+  .caixa-bloqueio button{width:100%;padding:.65rem;border:none;border-radius:8px;background:linear-gradient(90deg,var(--orange),var(--gold));color:var(--navy-900);font-weight:700;cursor:pointer;font-size:.95rem;}
+  .caixa-bloqueio button:hover{filter:brightness(1.07);}
+  #erro-senha-admin{color:var(--red);font-weight:600;}
+  .aviso-duplicado{display:none;color:var(--red);font-size:.72rem;font-weight:700;margin-top:.2rem;}
+  .btn-desfazer{background:var(--white);color:var(--navy-800);border:1.5px solid var(--gray-200) !important;}
+  .btn-desfazer:hover:not(:disabled){border-color:var(--orange) !important;}
+  .btn-desfazer:disabled{opacity:.45;cursor:default;}
+
+  .faixa-rascunho{
+    background:#fff7e0;border-bottom:1px solid var(--gold);padding:.6rem 1.25rem;
+    display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;font-size:.85rem;
+  }
+  .faixa-rascunho button{padding:.4rem .8rem;font-size:.78rem;}
+  .btn-restaurar{background:var(--navy-800);color:var(--white);}
+  .btn-descartar{background:none;color:var(--navy-600);border:1.5px solid var(--gray-200) !important;}
+
+  .faixa-erro-arquivo{
+    background:#fee2e2;border-bottom:1px solid #fca5a5;color:#7f1d1d;
+    padding:.9rem 1.25rem;font-size:.88rem;line-height:1.5;
+  }
+  .faixa-erro-arquivo strong{display:block;margin-bottom:.2rem;font-size:.95rem;}
+
+  main{padding:1rem 1.25rem 3rem;overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;background:var(--white);border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(20,27,40,.08);}
+  thead th{
+    text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;color:var(--navy-600);
+    padding:.6rem .6rem;border-bottom:2px solid var(--gray-200);white-space:nowrap;background:var(--gray-100);
+    position:sticky;top:0;
+  }
+  tbody td{padding:.4rem .6rem;border-bottom:1px solid var(--gray-200);vertical-align:middle;}
+  tbody tr.escondida{display:none;}
+  tbody tr.inativo{opacity:.55;}
+  tbody tr.linha-nova{background:#fffbea;}
+  tbody tr.linha-erro{background:#fee2e2;}
+  tbody tr.linha-erro td{border-color:#fca5a5;}
+
+  td.col-codigo{width:80px;}
+  td.col-categoria{width:190px;}
+  td.col-foto{width:56px;text-align:center;}
+  .icone-foto{font-size:1.05rem;}
+  td.col-ativo{width:70px;text-align:center;}
+  td.col-acao{width:90px;}
+
+  input.campo-codigo, input.campo-descricao, select.campo-categoria{
+    width:100%;padding:.4rem .5rem;border:1.5px solid transparent;border-radius:5px;font-size:.85rem;
+    background:transparent;color:var(--navy-800);
+  }
+  input.campo-codigo:hover, input.campo-descricao:hover, select.campo-categoria:hover,
+  input.campo-codigo:focus, input.campo-descricao:focus, select.campo-categoria:focus{
+    border-color:var(--gray-200);background:var(--gray-100);outline:none;
+  }
+  input.campo-codigo{width:70px;font-weight:700;}
+
+  input[type="checkbox"].chk-ativo{width:20px;height:20px;cursor:pointer;}
+
+  .btn-remover{background:#fee2e2;color:var(--red);padding:.4rem .6rem;font-size:.78rem;white-space:nowrap;}
+  .btn-remover:hover{background:#fecaca;}
+
+  .rodape-fixo{
+    position:sticky;bottom:0;background:var(--white);border-top:1px solid var(--gray-200);
+    padding:.8rem 1.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;
+    box-shadow:0 -4px 12px rgba(0,0,0,.06);
+  }
+  .aviso{font-size:.8rem;color:var(--navy-600);}
+  .aviso.erro{color:var(--red);font-weight:700;}
+
+  .modal-fundo{display:none;position:fixed;inset:0;background:rgba(20,27,40,.6);z-index:200;justify-content:center;align-items:center;padding:1rem;}
+  .modal-fundo.aberto{display:flex;}
+  .modal-caixa{background:var(--white);border-radius:10px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:1.25rem;}
+  .modal-caixa h2{margin:0 0 1rem;font-size:1.05rem;}
+  .linha-categoria{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;}
+  .linha-categoria input{flex:1;padding:.5rem .6rem;border:1.5px solid var(--gray-200);border-radius:6px;font-size:.85rem;}
+  .linha-categoria .contagem-cat{font-size:.72rem;color:var(--navy-600);white-space:nowrap;min-width:70px;text-align:right;}
+  .nova-categoria{display:flex;gap:.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--gray-200);}
+  .nova-categoria input{flex:1;padding:.5rem .6rem;border:1.5px solid var(--gray-200);border-radius:6px;font-size:.85rem;}
+  .btn-fechar-modal{width:100%;margin-top:1rem;background:var(--navy-800);color:var(--white);}
+</style>
+</head>
+<body>
+
+<div id="tela-bloqueio" style="display:none;">
+  <div class="caixa-bloqueio">
+    <h2>🔒 Painel protegido</h2>
+    <p>Digite a senha para continuar.</p>
+    <input type="password" id="campo-senha-admin" autocomplete="off">
+    <button id="btn-entrar-admin" type="button">Entrar</button>
+    <p id="erro-senha-admin" style="display:none;"></p>
+  </div>
+</div>
+
+<header>
+  <h1 id="titulo-cabecalho-admin">🛠️ Painel de Produtos — Topmix</h1>
+  <p>Edite, ative/desative, adicione ou remova produtos aqui. Depois baixe o arquivo atualizado e suba no GitHub.</p>
+</header>
+
+<div class="faixa-erro-arquivo" id="faixa-erro-arquivo" style="display:none;">
+  <strong>⚠️ Não encontramos o arquivo produtos.js</strong>
+  Ele precisa estar na mesma pasta que este admin.html. Se você abriu este arquivo sozinho (por exemplo, direto da pasta de Downloads), baixe/copie o produtos.js pra junto dele e abra esta página de novo.
+</div>
+
+<div class="faixa-rascunho" id="faixa-rascunho" style="display:none;">
+  <span id="texto-rascunho"></span>
+  <span>
+    <button class="btn-restaurar" id="btn-restaurar">Continuar de onde parei</button>
+    <button class="btn-descartar" id="btn-descartar">Começar do zero</button>
+  </span>
+</div>
+
+<div class="barra">
+  <input type="search" id="campo-busca-admin" placeholder="Buscar por código, descrição ou categoria..." autocomplete="off">
+  <select id="filtro-categoria" title="Filtrar por categoria"><option value="">Todas as categorias</option></select>
+  <select id="filtro-ativo" title="Filtrar por status">
+    <option value="todos">Todos os status</option>
+    <option value="ativos">Somente ativos</option>
+    <option value="inativos">Somente inativos</option>
+  </select>
+  <select id="filtro-foto" title="Filtrar por foto">
+    <option value="todos">Todas as fotos</option>
+    <option value="com">Somente com foto</option>
+    <option value="sem">Somente sem foto</option>
+  </select>
+  <span class="contador" id="contador-admin"></span>
+  <span class="contador" id="contador-fotos" title="Clique em 'Verificar fotos' para atualizar">📷 fotos: não verificado</span>
+  <button class="btn-cat" id="btn-categorias">🏷️ Categorias</button>
+  <button class="btn-desfazer" id="btn-desfazer" disabled>↩️ Desfazer</button>
+  <button class="btn-add" id="btn-adicionar">+ Adicionar produto</button>
+  <button class="btn-importar" id="btn-importar">📥 Importar planilha</button>
+  <input type="file" id="campo-arquivo-importar" accept=".csv,.xlsx,.xls" style="display:none;">
+  <button class="btn-importar" id="btn-verificar-fotos">📷 Verificar fotos</button>
+  <button class="btn-baixar" id="btn-baixar">⬇️ Baixar produtos.js atualizado</button>
+</div>
+
+<main>
+  <table>
+    <thead>
+      <tr>
+        <th class="ordenavel" data-campo="codigo">Código<span class="seta-ordenacao"></span></th>
+        <th class="ordenavel" data-campo="descricao">Descrição<span class="seta-ordenacao"></span></th>
+        <th class="ordenavel" data-campo="categoria">Categoria<span class="seta-ordenacao"></span></th>
+        <th class="col-foto-cabecalho">Foto</th>
+        <th>Ativo</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="corpo-tabela"></tbody>
+  </table>
+</main>
+
+
+<div class="rodape-fixo">
+  <span class="aviso" id="aviso-baixo">Toda alteração aqui é salva automaticamente neste navegador — mas só vale pro catálogo de verdade depois que você clica em "Baixar produtos.js atualizado" e sobe no GitHub.</span>
+</div>
+
+<div class="modal-fundo" id="modal-categorias">
+  <div class="modal-caixa">
+    <h2>Gerenciar categorias</h2>
+    <div id="lista-categorias-modal"></div>
+    <div class="nova-categoria">
+      <input type="text" id="campo-nova-categoria" placeholder="Nome da nova categoria">
+      <button class="btn-add" id="btn-nova-categoria" type="button">+ Adicionar</button>
+    </div>
+    <button class="btn-fechar-modal" id="btn-fechar-categorias" type="button">Fechar</button>
+  </div>
+</div>
+
+<script src="produtos.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------------- Trava de senha (se configurada em config.js) ----------------
+  (function verificarSenha() {
+    var cfg = (typeof SITE_CONFIG !== "undefined") ? SITE_CONFIG : {};
+    if (!cfg.senhaAdmin) return; // sem senha definida = painel aberto normalmente
+    var CHAVE_SESSAO = "topmix_admin_desbloqueado";
+    if (sessionStorage.getItem(CHAVE_SESSAO) === "1") return;
+
+    var tela = document.getElementById("tela-bloqueio");
+    var campo = document.getElementById("campo-senha-admin");
+    var erro = document.getElementById("erro-senha-admin");
+    var btn = document.getElementById("btn-entrar-admin");
+    tela.style.display = "flex";
+    campo.focus();
+
+    function tentar() {
+      if (campo.value === cfg.senhaAdmin) {
+        sessionStorage.setItem(CHAVE_SESSAO, "1");
+        tela.style.display = "none";
+      } else {
+        erro.textContent = "Senha incorreta. Tente de novo.";
+        erro.style.display = "block";
+        campo.value = "";
+        campo.focus();
+      }
+    }
+    btn.addEventListener("click", tentar);
+    campo.addEventListener("keydown", function (e) { if (e.key === "Enter") tentar(); });
+  })();
+
+  if (typeof SITE_CONFIG !== "undefined" && SITE_CONFIG.nome) {
+    document.getElementById("titulo-cabecalho-admin").textContent = "\uD83D\uDEE0\uFE0F Painel de Produtos \u2014 " + SITE_CONFIG.nome;
+  }
+
+  var CHAVE_RASCUNHO = "topmix_admin_rascunho_v1";
+  var ARQUIVO_PRODUTOS_ENCONTRADO = typeof PRODUTOS_DADOS !== "undefined" && Array.isArray(PRODUTOS_DADOS) && PRODUTOS_DADOS.length > 0;
+
+  if (!ARQUIVO_PRODUTOS_ENCONTRADO) {
+    document.getElementById("faixa-erro-arquivo").style.display = "block";
+  }
+
+  var dadosOriginais = (ARQUIVO_PRODUTOS_ENCONTRADO ? PRODUTOS_DADOS : []).map(function (p) {
+    return { codigo: p.codigo, descricao: p.descricao, categoria: p.categoria || "", ativo: p.ativo !== false };
+  });
+  var dados = dadosOriginais;
+
+  var categoriasDisponiveis = [
+    "Soldagem", "Abrasivos", "Tintas e Pintura", "Ferramentas Elétricas",
+    "Ferramentas Manuais", "Brocas e Acessórios", "Fixadores e Química",
+    "EPI - Proteção", "Máquinas e Equipamentos", "Outros"
+  ];
+  dadosOriginais.forEach(function (d) {
+    if (d.categoria && categoriasDisponiveis.indexOf(d.categoria) === -1) categoriasDisponiveis.push(d.categoria);
+  });
+
+  var corpo = document.getElementById("corpo-tabela");
+  var campoBusca = document.getElementById("campo-busca-admin");
+  var filtroCategoria = document.getElementById("filtro-categoria");
+  var filtroAtivo = document.getElementById("filtro-ativo");
+  var contador = document.getElementById("contador-admin");
+  var avisoBaixo = document.getElementById("aviso-baixo");
+  var faixaRascunho = document.getElementById("faixa-rascunho");
+  var textoRascunho = document.getElementById("texto-rascunho");
+
+  var mapaLinhas = new Map(); // index (no array "dados") -> <tr> já criado
+  var ordenacaoAtual = { campo: null, direcao: "asc" }; // null = ordem padrão (ativos primeiro, depois inativos)
+
+  // ---------------- Desfazer última ação ----------------
+  var btnDesfazer = document.getElementById("btn-desfazer");
+  var pilhaDesfazer = [];
+  var LIMITE_DESFAZER = 15;
+
+  // Chame ANTES de qualquer alteração que valha a pena poder desfazer
+  // (remover produto, ativar/desativar, mudar categoria, importar planilha etc.)
+  function salvarEstadoParaDesfazer() {
+    pilhaDesfazer.push({
+      dados: JSON.parse(JSON.stringify(dados)),
+      categorias: categoriasDisponiveis.slice()
+    });
+    if (pilhaDesfazer.length > LIMITE_DESFAZER) pilhaDesfazer.shift();
+    btnDesfazer.disabled = false;
+  }
+
+  function desfazerUltimaAcao() {
+    if (!pilhaDesfazer.length) return;
+    var estado = pilhaDesfazer.pop();
+    dados = estado.dados;
+    categoriasDisponiveis = estado.categorias;
+    renderizarTudo();
+    salvarRascunho();
+    btnDesfazer.disabled = pilhaDesfazer.length === 0;
+    avisoBaixo.classList.remove("erro");
+    avisoBaixo.textContent = "Última ação desfeita.";
+  }
+
+  btnDesfazer.addEventListener("click", desfazerUltimaAcao);
+
+  // ---------------- Aviso de código duplicado ----------------
+  // Roda toda vez que um código muda (digitando ou importando) e destaca em
+  // vermelho todas as linhas que estiverem com o mesmo código repetido.
+  function verificarCodigosDuplicados() {
+    var contagem = {};
+    mapaLinhas.forEach(function (tr, index) {
+      var item = dados[index];
+      if (!item || !item.codigo) return;
+      contagem[item.codigo] = (contagem[item.codigo] || 0) + 1;
+    });
+    mapaLinhas.forEach(function (tr, index) {
+      var item = dados[index];
+      if (!item) return;
+      var duplicado = !!(item.codigo && contagem[item.codigo] > 1);
+      tr.classList.toggle("linha-erro", duplicado);
+      var avisoDup = tr.querySelector(".aviso-duplicado");
+      if (avisoDup) avisoDup.style.display = duplicado ? "block" : "none";
+    });
+  }
+
+  function normalizar(t) {
+    return String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  // Preenche o <select> de categoria de UMA linha da tabela (garante que a
+  // categoria atual do produto sempre apareça, mesmo que tenha sido digitada
+  // manualmente antes e não esteja na lista oficial).
+  function preencherSelectCategoria(select, valorAtual) {
+    select.innerHTML = "";
+    var opcoes = categoriasDisponiveis.slice();
+    if (valorAtual && opcoes.indexOf(valorAtual) === -1) opcoes.unshift(valorAtual);
+    opcoes.forEach(function (c) {
+      var opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      select.appendChild(opt);
+    });
+    select.value = valorAtual || "";
+  }
+
+  // Atualiza a lista de categorias em TODOS os lugares que dependem dela:
+  // o filtro da barra de ferramentas e o <select> de cada linha da tabela.
+  function atualizarOpcoesCategorias() {
+    var valorFiltroAtual = filtroCategoria.value;
+    filtroCategoria.innerHTML = '<option value="">Todas as categorias</option>';
+    categoriasDisponiveis.forEach(function (c) {
+      var opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      filtroCategoria.appendChild(opt);
+    });
+    filtroCategoria.value = categoriasDisponiveis.indexOf(valorFiltroAtual) !== -1 ? valorFiltroAtual : "";
+
+    mapaLinhas.forEach(function (tr, index) {
+      var item = dados[index];
+      if (!item) return;
+      var select = tr.querySelector(".campo-categoria");
+      if (select) preencherSelectCategoria(select, item.categoria);
+    });
+  }
+
+  // ---------------- Rascunho automático (localStorage) ----------------
+  var timeoutRascunho = null;
+  function salvarRascunho() {
+    clearTimeout(timeoutRascunho);
+    timeoutRascunho = setTimeout(function () {
+      try {
+        localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify({
+          data: new Date().toISOString(),
+          dados: dados,
+          categorias: categoriasDisponiveis
+        }));
+      } catch (e) {}
+    }, 400);
+  }
+
+  function verificarRascunhoSalvo() {
+    var bruto;
+    try { bruto = localStorage.getItem(CHAVE_RASCUNHO); } catch (e) { return; }
+    if (!bruto) return;
+    var rascunho;
+    try { rascunho = JSON.parse(bruto); } catch (e) { return; }
+    if (!rascunho || !Array.isArray(rascunho.dados) || !rascunho.dados.length) return;
+
+    var dataFormatada = "";
+    try { dataFormatada = new Date(rascunho.data).toLocaleString("pt-BR"); } catch (e) {}
+    textoRascunho.textContent = "📝 Encontramos um rascunho salvo automaticamente" + (dataFormatada ? " em " + dataFormatada : "") + " com alterações que você ainda não baixou.";
+    faixaRascunho.style.display = "flex";
+
+    document.getElementById("btn-restaurar").addEventListener("click", function () {
+      dados = rascunho.dados;
+      if (Array.isArray(rascunho.categorias)) categoriasDisponiveis = rascunho.categorias;
+      faixaRascunho.style.display = "none";
+      renderizarTudo();
+    });
+    document.getElementById("btn-descartar").addEventListener("click", function () {
+      try { localStorage.removeItem(CHAVE_RASCUNHO); } catch (e) {}
+      faixaRascunho.style.display = "none";
+    });
+  }
+
+  // ---------------- Tabela ----------------
+  function criarLinha(item, index, ehNova) {
+    var tr = document.createElement("tr");
+    tr.dataset.index = index;
+    if (!item.ativo) tr.classList.add("inativo");
+    if (ehNova) tr.classList.add("linha-nova");
+
+    var tdCod = document.createElement("td"); tdCod.className = "col-codigo";
+    var inCod = document.createElement("input");
+    inCod.className = "campo-codigo"; inCod.type = "text"; inCod.inputMode = "numeric";
+    inCod.value = item.codigo === null || item.codigo === undefined ? "" : item.codigo;
+    var avisoDup = document.createElement("span");
+    avisoDup.className = "aviso-duplicado"; avisoDup.textContent = "⚠️ código repetido";
+    tdCod.appendChild(inCod);
+    tdCod.appendChild(avisoDup);
+
+    var tdDesc = document.createElement("td");
+    var inDesc = document.createElement("input");
+    inDesc.className = "campo-descricao"; inDesc.type = "text"; inDesc.value = item.descricao;
+    tdDesc.appendChild(inDesc);
+
+    var tdCat = document.createElement("td"); tdCat.className = "col-categoria";
+    var inCat = document.createElement("select");
+    inCat.className = "campo-categoria";
+    preencherSelectCategoria(inCat, item.categoria);
+    tdCat.appendChild(inCat);
+
+    var tdFoto = document.createElement("td"); tdFoto.className = "col-foto";
+    var iconeFoto = document.createElement("span");
+    iconeFoto.className = "icone-foto";
+    if (item.temFoto === true) { iconeFoto.textContent = "✅"; iconeFoto.title = "Tem foto"; }
+    else if (item.temFoto === false) { iconeFoto.textContent = "❌"; iconeFoto.title = "Sem foto"; }
+    else { iconeFoto.textContent = "❔"; iconeFoto.title = "Ainda não verificado"; }
+    tdFoto.appendChild(iconeFoto);
+
+    var tdAtivo = document.createElement("td"); tdAtivo.className = "col-ativo";
+    var chk = document.createElement("input");
+    chk.type = "checkbox"; chk.className = "chk-ativo"; chk.checked = item.ativo;
+    tdAtivo.appendChild(chk);
+
+    var tdAcao = document.createElement("td"); tdAcao.className = "col-acao";
+    var btnRem = document.createElement("button");
+    btnRem.className = "btn-remover"; btnRem.type = "button"; btnRem.textContent = "Remover";
+    tdAcao.appendChild(btnRem);
+
+    tr.appendChild(tdCod); tr.appendChild(tdDesc); tr.appendChild(tdCat); tr.appendChild(tdFoto); tr.appendChild(tdAtivo); tr.appendChild(tdAcao);
+
+    inCod.addEventListener("focus", function () { inCod.dataset.valorAntesDeEditar = inCod.value; });
+    inCod.addEventListener("input", function () {
+      var v = inCod.value.replace(/[^0-9]/g, "");
+      inCod.value = v;
+      dados[index].codigo = v === "" ? null : parseInt(v, 10);
+      salvarRascunho();
+      verificarCodigosDuplicados();
+    });
+    inCod.addEventListener("blur", function () {
+      if (inCod.dataset.valorAntesDeEditar !== inCod.value) salvarEstadoParaDesfazer();
+    });
+    inDesc.addEventListener("input", function () {
+      dados[index].descricao = inDesc.value;
+      salvarRascunho();
+    });
+    inCat.addEventListener("change", function () {
+      salvarEstadoParaDesfazer();
+      dados[index].categoria = inCat.value;
+      salvarRascunho();
+      atualizarTabela();
+    });
+    chk.addEventListener("change", function () {
+      salvarEstadoParaDesfazer();
+      dados[index].ativo = chk.checked;
+      tr.classList.toggle("inativo", !chk.checked);
+      salvarRascunho();
+      atualizarTabela();
+    });
+    btnRem.addEventListener("click", function () {
+      if (!confirm("Remover o produto \"" + (dados[index].descricao || "sem descrição") + "\" da lista?")) return;
+      salvarEstadoParaDesfazer();
+      dados[index] = null;
+      mapaLinhas.delete(index);
+      tr.remove();
+      salvarRascunho();
+      atualizarTabela();
+      verificarCodigosDuplicados();
+    });
+
+    return tr;
+  }
+
+  function renderizarTudo() {
+    corpo.innerHTML = "";
+    mapaLinhas.clear();
+    dados.forEach(function (item, index) {
+      if (item === null) return;
+      var tr = criarLinha(item, index, false);
+      mapaLinhas.set(index, tr);
+      corpo.appendChild(tr);
+    });
+    atualizarOpcoesCategorias();
+    atualizarTabela();
+    atualizarContadorFotosExibicao();
+    verificarCodigosDuplicados();
+  }
+
+  // Aplica busca + filtro de categoria + filtro de status e reordena a tabela.
+  function atualizarTabela() {
+    aplicarFiltros();
+    ordenarLinhas();
+  }
+
+  // Só mostra/esconde linhas conforme busca + filtros e atualiza o contador
+  // (sem reordenar) -- usado quando reordenar agora atrapalharia, como logo
+  // depois de adicionar um produto novo.
+  function aplicarFiltros() {
+    var termo = normalizar(campoBusca.value.trim());
+    var catFiltro = filtroCategoria.value;
+    var statusFiltro = filtroAtivo.value;
+    var fotoFiltro = filtroFoto.value;
+    var totalGeral = 0, ativosGeral = 0, exibidos = 0;
+
+    mapaLinhas.forEach(function (tr, index) {
+      var item = dados[index];
+      if (!item) return;
+      totalGeral++;
+      if (item.ativo) ativosGeral++;
+
+      var passaTexto = !termo ||
+        String(item.codigo).indexOf(termo) !== -1 ||
+        normalizar(item.descricao).indexOf(termo) !== -1 ||
+        normalizar(item.categoria || "").indexOf(termo) !== -1;
+      var passaCategoria = !catFiltro || item.categoria === catFiltro;
+      var passaStatus = statusFiltro === "ativos" ? item.ativo
+        : statusFiltro === "inativos" ? !item.ativo
+        : true;
+      var passaFoto = fotoFiltro === "com" ? item.temFoto === true
+        : fotoFiltro === "sem" ? item.temFoto === false
+        : true;
+      var passa = passaTexto && passaCategoria && passaStatus && passaFoto;
+
+      tr.classList.toggle("escondida", !passa);
+      if (passa) exibidos++;
+    });
+
+    if (exibidos === totalGeral) {
+      contador.textContent = totalGeral + " produtos (" + ativosGeral + " ativos)";
+    } else {
+      contador.textContent = exibidos + " de " + totalGeral + " produtos exibidos";
+    }
+  }
+
+  // Reordena as linhas já existentes no DOM (sem recriar nada, então quem
+  // está digitando em outra linha não perde o foco). Se nenhuma coluna foi
+  // clicada pra ordenar, a regra padrão vale: ativos primeiro, na ordem
+  // original, e os inativos vão pro final, também na ordem original.
+  function ordenarLinhas() {
+    var entradas = [];
+    mapaLinhas.forEach(function (tr, index) {
+      var item = dados[index];
+      if (!item) return;
+      entradas.push({ index: index, item: item, tr: tr });
+    });
+
+    var campo = ordenacaoAtual.campo;
+    var direcao = ordenacaoAtual.direcao === "desc" ? -1 : 1;
+
+    entradas.sort(function (a, b) {
+      if (campo) {
+        var va, vb;
+        if (campo === "codigo") {
+          va = a.item.codigo || 0; vb = b.item.codigo || 0;
+          return (va - vb) * direcao;
+        }
+        va = normalizar(a.item[campo] || ""); vb = normalizar(b.item[campo] || "");
+        if (va < vb) return -1 * direcao;
+        if (va > vb) return 1 * direcao;
+        return a.index - b.index;
+      }
+      // ordem padrão: ativos antes de inativos, cada grupo na ordem original
+      if (a.item.ativo !== b.item.ativo) return a.item.ativo ? -1 : 1;
+      return a.index - b.index;
+    });
+
+    entradas.forEach(function (e) { corpo.appendChild(e.tr); });
+  }
+
+  // ---------------- Cabeçalhos clicáveis (ordenar como no Excel) ----------------
+  var cabecalhos = document.querySelectorAll("thead th.ordenavel");
+  cabecalhos.forEach(function (th) {
+    th.addEventListener("click", function () {
+      var campo = th.dataset.campo;
+      if (ordenacaoAtual.campo !== campo) {
+        ordenacaoAtual = { campo: campo, direcao: "asc" };
+      } else if (ordenacaoAtual.direcao === "asc") {
+        ordenacaoAtual.direcao = "desc";
+      } else {
+        ordenacaoAtual = { campo: null, direcao: "asc" }; // volta pro padrão
+      }
+      cabecalhos.forEach(function (outro) {
+        outro.querySelector(".seta-ordenacao").textContent =
+          (outro === th && ordenacaoAtual.campo) ? (ordenacaoAtual.direcao === "asc" ? "▲" : "▼") : "";
+      });
+      ordenarLinhas();
+    });
+  });
+
+  var timeoutBusca = null;
+  campoBusca.addEventListener("input", function () {
+    clearTimeout(timeoutBusca);
+    timeoutBusca = setTimeout(atualizarTabela, 150);
+  });
+  filtroCategoria.addEventListener("change", atualizarTabela);
+  filtroAtivo.addEventListener("change", atualizarTabela);
+
+  document.getElementById("btn-adicionar").addEventListener("click", function () {
+    salvarEstadoParaDesfazer();
+    var maiorCodigo = dados.reduce(function (max, d) { return d && d.codigo > max ? d.codigo : max; }, 0);
+    var novo = { codigo: maiorCodigo + 1, descricao: "", categoria: "", ativo: true };
+    var index = dados.length;
+    dados.push(novo);
+    var linha = criarLinha(novo, index, true);
+    mapaLinhas.set(index, linha);
+    corpo.insertBefore(linha, corpo.firstChild);
+    linha.scrollIntoView({ behavior: "smooth", block: "center" });
+    linha.querySelector(".campo-descricao").focus();
+    aplicarFiltros();
+    salvarRascunho();
+  });
+
+  // ---------------- Baixar produtos.js ----------------
+  document.getElementById("btn-baixar").addEventListener("click", function () {
+    Array.from(corpo.querySelectorAll(".linha-erro")).forEach(function (tr) { tr.classList.remove("linha-erro"); });
+
+    var indicesValidos = [];
+    dados.forEach(function (d, i) { if (d !== null) indicesValidos.push(i); });
+
+    var completamenteVazias = 0, semDescricaoIgnorados = 0, codigosAutoatribuidos = 0;
+    var candidatos = [];
+
+    indicesValidos.forEach(function (i) {
+      var d = dados[i];
+      var temCodigo = d.codigo && d.codigo > 0;
+      var temDescricao = d.descricao && d.descricao.trim();
+      if (!temCodigo && !temDescricao) { completamenteVazias++; return; }
+      if (!temDescricao) { semDescricaoIgnorados++; return; }
+      candidatos.push({ indice: i, item: d, temCodigoOriginal: !!temCodigo });
+    });
+
+    var maiorCodigoAtual = candidatos.reduce(function (max, c) { return c.temCodigoOriginal && c.item.codigo > max ? c.item.codigo : max; }, 0);
+    candidatos.forEach(function (c) {
+      if (!c.temCodigoOriginal) {
+        maiorCodigoAtual++;
+        c.item.codigo = maiorCodigoAtual;
+        codigosAutoatribuidos++;
+      }
+    });
+
+    var contagemCodigos = {};
+    candidatos.forEach(function (c) { contagemCodigos[c.item.codigo] = (contagemCodigos[c.item.codigo] || 0) + 1; });
+    var codigosDuplicados = Object.keys(contagemCodigos).filter(function (c) { return contagemCodigos[c] > 1; });
+
+    if (codigosDuplicados.length) {
+      var primeiraLinhaErro = null;
+      candidatos.forEach(function (c) {
+        if (codigosDuplicados.indexOf(String(c.item.codigo)) !== -1) {
+          var tr = corpo.querySelector('tr[data-index="' + c.indice + '"]');
+          if (tr) {
+            tr.classList.add("linha-erro");
+            if (!primeiraLinhaErro) primeiraLinhaErro = tr;
+          }
+        }
+      });
+      avisoBaixo.textContent = "Existem produtos com código repetido (destacados em vermelho na tabela): " + codigosDuplicados.join(", ") + ". Corrija antes de baixar.";
+      avisoBaixo.classList.add("erro");
+      if (primeiraLinhaErro) primeiraLinhaErro.scrollIntoView({ behavior: "smooth", block: "center" });
+      alert("Encontrei produtos com o mesmo código: " + codigosDuplicados.join(", ") + ".\n\nDestaquei essas linhas em vermelho na tabela pra você corrigir. Nada foi baixado ainda.");
+      return;
+    }
+    avisoBaixo.classList.remove("erro");
+
+    var validos = candidatos.map(function (c) { return c.item; });
+    validos.sort(function (a, b) { return a.codigo - b.codigo; });
+
+    var linhas = validos.map(function (d) {
+      return "{codigo:" + d.codigo + ",descricao:" + JSON.stringify(d.descricao.trim()) +
+        ",categoria:" + JSON.stringify((d.categoria || "").trim() || "Outros") + ",ativo:" + (d.ativo ? "true" : "false") + "}";
+    });
+
+    var conteudo =
+      "// ============================================================\n" +
+      "// PRODUTOS.JS \u2014 base de dados do cat\u00e1logo " + (typeof SITE_CONFIG !== "undefined" && SITE_CONFIG.nome ? SITE_CONFIG.nome : "") + "\n" +
+      "// Gerado pelo painel admin.html em " + new Date().toLocaleString("pt-BR") + "\n" +
+      "// ============================================================\n" +
+      "var PRODUTOS_DADOS = [\n" + linhas.join(",\n") + "\n];\n";
+
+    var blob = new Blob([conteudo], { type: "text/javascript;charset=utf-8" });
+    var link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "produtos.js";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    var avisos = [];
+    if (completamenteVazias) avisos.push(completamenteVazias + " linha(s) em branco (esquecidas de teste) foram ignoradas");
+    if (semDescricaoIgnorados) avisos.push(semDescricaoIgnorados + " produto(s) com código mas sem descrição ficaram de fora — preencha a descrição e baixe de novo se quiser incluí-los");
+    if (codigosAutoatribuidos) avisos.push(codigosAutoatribuidos + " produto(s) sem código ganharam um código novo automaticamente");
+    if (avisos.length) {
+      avisoBaixo.textContent = "Arquivo baixado. Só um aviso: " + avisos.join("; ") + ".";
+    } else {
+      avisoBaixo.textContent = "Arquivo baixado com sucesso — " + validos.length + " produtos.";
+    }
+  });
+
+  // ---------------- Importar planilha (.csv / .xlsx / .xls) ----------------
+  // Regra combinada com você: cruza pelo CÓDIGO.
+  //  - código já existe no catálogo -> corrige a descrição (e a categoria, se
+  //    a planilha trouxer uma) automaticamente, sem duplicar o produto.
+  //  - código não existe ainda -> cria um produto novo (ativo por padrão).
+  //  - linha sem código ou sem descrição -> é ignorada e contada no resumo.
+
+  function normalizarCabecalho(t) {
+    return normalizar(t).replace(/[^a-z0-9]/g, "");
+  }
+
+  var CABECALHOS_CODIGO = ["codigo", "cod", "code", "sku"];
+  var CABECALHOS_DESCRICAO = ["descricao", "desc", "description", "produto", "nome"];
+  var CABECALHOS_CATEGORIA = ["categoria", "category"];
+
+  // Detecta se a primeira linha é um cabeçalho de texto (não começa com
+  // código numérico) e, se for, descobre em qual coluna está cada dado.
+  function detectarColunas(linhas) {
+    var colunas = { codigo: 0, descricao: 1, categoria: -1, temCabecalho: false };
+    if (!linhas.length) return colunas;
+    var primeira = linhas[0];
+    var pareceCabecalho = primeira.some(function (celula) {
+      var norm = normalizarCabecalho(celula || "");
+      return CABECALHOS_CODIGO.indexOf(norm) !== -1 ||
+             CABECALHOS_DESCRICAO.indexOf(norm) !== -1 ||
+             CABECALHOS_CATEGORIA.indexOf(norm) !== -1;
+    });
+    if (pareceCabecalho) {
+      colunas.temCabecalho = true;
+      primeira.forEach(function (celula, i) {
+        var norm = normalizarCabecalho(celula || "");
+        if (CABECALHOS_CODIGO.indexOf(norm) !== -1) colunas.codigo = i;
+        else if (CABECALHOS_DESCRICAO.indexOf(norm) !== -1) colunas.descricao = i;
+        else if (CABECALHOS_CATEGORIA.indexOf(norm) !== -1) colunas.categoria = i;
+      });
+    }
+    return colunas;
+  }
+
+  // Faz o "de-para" entre as linhas importadas e o array "dados": atualiza
+  // quem já existe (por código) e adiciona quem é novo.
+  function importarLinhas(linhas) {
+    var colunas = detectarColunas(linhas);
+    var inicio = colunas.temCabecalho ? 1 : 0;
+
+    var indicePorCodigo = new Map();
+    dados.forEach(function (d, i) { if (d && d.codigo) indicePorCodigo.set(d.codigo, i); });
+
+    var atualizados = 0, criados = 0, ignoradas = 0;
+    var indicesTocados = [];
+
+    for (var i = inicio; i < linhas.length; i++) {
+      var linha = linhas[i];
+      if (!linha || !linha.length) continue;
+
+      var codigoBruto = String(linha[colunas.codigo] != null ? linha[colunas.codigo] : "").replace(/[^0-9]/g, "");
+      var descricaoBruta = String(linha[colunas.descricao] != null ? linha[colunas.descricao] : "").trim();
+      var categoriaBruta = colunas.categoria !== -1 ? String(linha[colunas.categoria] || "").trim() : "";
+
+      if (!codigoBruto || !descricaoBruta) { ignoradas++; continue; }
+      var codigo = parseInt(codigoBruto, 10);
+
+      if (indicePorCodigo.has(codigo)) {
+        var idx = indicePorCodigo.get(codigo);
+        dados[idx].descricao = descricaoBruta;
+        if (categoriaBruta) dados[idx].categoria = categoriaBruta;
+        indicesTocados.push({ index: idx, tipo: "atualizado" });
+        atualizados++;
+      } else {
+        var novoItem = { codigo: codigo, descricao: descricaoBruta, categoria: categoriaBruta || "", ativo: true };
+        var novoIndex = dados.length;
+        dados.push(novoItem);
+        indicePorCodigo.set(codigo, novoIndex);
+        indicesTocados.push({ index: novoIndex, tipo: "novo" });
+        criados++;
+      }
+
+      if (categoriaBruta && categoriasDisponiveis.indexOf(categoriaBruta) === -1) {
+        categoriasDisponiveis.push(categoriaBruta);
+      }
+    }
+
+    return { atualizados: atualizados, criados: criados, ignoradas: ignoradas, indicesTocados: indicesTocados };
+  }
+
+  // Leitor de CSV simples, mas que aguenta aspas e detecta sozinho se o
+  // separador é vírgula ou ponto e vírgula (Excel em pt-BR costuma exportar
+  // com ponto e vírgula, porque a vírgula já é usada como separador decimal).
+  function parseCSV(texto) {
+    texto = texto.replace(/^\uFEFF/, ""); // remove BOM, se houver
+    var primeiraLinha = texto.split(/\r\n|\n|\r/)[0] || "";
+    var separador = (primeiraLinha.split(";").length > primeiraLinha.split(",").length) ? ";" : ",";
+
+    var linhas = [];
+    var linhaAtual = [];
+    var campoAtual = "";
+    var dentroAspas = false;
+
+    for (var i = 0; i < texto.length; i++) {
+      var c = texto[i];
+      if (dentroAspas) {
+        if (c === '"') {
+          if (texto[i + 1] === '"') { campoAtual += '"'; i++; }
+          else dentroAspas = false;
+        } else {
+          campoAtual += c;
+        }
+      } else if (c === '"') {
+        dentroAspas = true;
+      } else if (c === separador) {
+        linhaAtual.push(campoAtual); campoAtual = "";
+      } else if (c === "\n" || c === "\r") {
+        if (c === "\r" && texto[i + 1] === "\n") i++;
+        linhaAtual.push(campoAtual); campoAtual = "";
+        linhas.push(linhaAtual); linhaAtual = [];
+      } else {
+        campoAtual += c;
+      }
+    }
+    if (campoAtual !== "" || linhaAtual.length) { linhaAtual.push(campoAtual); linhas.push(linhaAtual); }
+    return linhas.filter(function (l) { return l.some(function (c) { return String(c).trim() !== ""; }); });
+  }
+
+  function finalizarImportacao(resultado) {
+    renderizarTudo();
+    resultado.indicesTocados.forEach(function (t) {
+      var tr = mapaLinhas.get(t.index);
+      if (tr) tr.classList.add(t.tipo === "novo" ? "linha-nova" : "linha-atualizada");
+    });
+    salvarRascunho();
+
+    var partes = [];
+    if (resultado.atualizados) partes.push(resultado.atualizados + " produto(s) corrigido(s)");
+    if (resultado.criados) partes.push(resultado.criados + " produto(s) novo(s) adicionado(s)");
+    if (resultado.ignoradas) partes.push(resultado.ignoradas + " linha(s) ignorada(s) (sem código ou sem descrição)");
+    avisoBaixo.classList.remove("erro");
+    avisoBaixo.textContent = partes.length
+      ? "Importação concluída: " + partes.join(", ") + "."
+      : "Nenhuma linha válida foi encontrada na planilha.";
+  }
+
+  // ---------------- Verificar fotos (img/<código>.jpg) ----------------
+  // Não dá pra "listar" a pasta img de dentro do navegador, então a única
+  // forma de saber se a foto existe é tentar carregá-la e ver se dá certo.
+  // Fazemos isso aos poucos (algumas de cada vez) pra não travar o navegador
+  // com quase mil pedidos de imagem ao mesmo tempo.
+  var contadorFotos = document.getElementById("contador-fotos");
+  var filtroFoto = document.getElementById("filtro-foto");
+  var verificacaoFotosEmAndamento = false;
+  var tokenVerificacaoFotos = 0;
+
+  function existeFoto(codigo) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      var resolvido = false;
+      var finalizar = function (valor) {
+        if (resolvido) return;
+        resolvido = true;
+        resolve(valor);
+      };
+      img.onload = function () { finalizar(true); };
+      img.onerror = function () { finalizar(false); };
+      img.src = "img/" + codigo + ".jpg";
+      // segurança: se nem load nem error disparar em 10s, considera "sem foto"
+      setTimeout(function () { finalizar(false); }, 10000);
+    });
+  }
+
+  function atualizarIconeFoto(index, temFoto) {
+    var tr = mapaLinhas.get(index);
+    if (!tr) return;
+    var icone = tr.querySelector(".icone-foto");
+    if (!icone) return;
+    if (temFoto) { icone.textContent = "✅"; icone.title = "Tem foto"; }
+    else { icone.textContent = "❌"; icone.title = "Sem foto"; }
+  }
+
+  function atualizarContadorFotosExibicao() {
+    var totalComCodigo = 0, verificados = 0, comFoto = 0;
+    dados.forEach(function (item) {
+      if (!item || !item.codigo) return;
+      totalComCodigo++;
+      if (item.temFoto === true || item.temFoto === false) {
+        verificados++;
+        if (item.temFoto === true) comFoto++;
+      }
+    });
+    if (verificados === 0) {
+      contadorFotos.textContent = "📷 fotos: não verificado";
+    } else if (verificados < totalComCodigo) {
+      contadorFotos.textContent = "📷 " + comFoto + " de " + verificados + " verificado(s) com foto (clique em Verificar fotos pra checar o resto)";
+    } else {
+      contadorFotos.textContent = "📷 " + comFoto + " de " + totalComCodigo + " produtos com foto";
+    }
+  }
+
+  function verificarFotos() {
+    if (verificacaoFotosEmAndamento) return;
+    var itens = [];
+    dados.forEach(function (item, index) {
+      if (item && item.codigo) itens.push(index);
+    });
+    if (!itens.length) return;
+
+    verificacaoFotosEmAndamento = true;
+    var meuToken = ++tokenVerificacaoFotos;
+    var btn = document.getElementById("btn-verificar-fotos");
+    btn.disabled = true;
+    filtroFoto.disabled = true;
+
+    var total = itens.length;
+    var feitos = 0, comFoto = 0;
+    var CONCORRENCIA = 12;
+    var proximo = 0;
+
+    function processarProximo() {
+      if (meuToken !== tokenVerificacaoFotos) return; // uma verificação mais nova começou, cancela essa
+      if (proximo >= itens.length) return;
+      var index = itens[proximo++];
+      var codigo = dados[index].codigo;
+      existeFoto(codigo).then(function (temFoto) {
+        if (meuToken !== tokenVerificacaoFotos) return;
+        dados[index].temFoto = temFoto;
+        if (temFoto) comFoto++;
+        feitos++;
+        atualizarIconeFoto(index, temFoto);
+        contadorFotos.textContent = "📷 verificando... " + feitos + "/" + total;
+
+        if (feitos === total) {
+          contadorFotos.textContent = "📷 " + comFoto + " de " + total + " produtos com foto";
+          contadorFotos.title = "Clique em 'Verificar fotos' para atualizar de novo";
+          btn.disabled = false;
+          filtroFoto.disabled = false;
+          verificacaoFotosEmAndamento = false;
+          aplicarFiltros();
+        } else {
+          processarProximo();
+        }
+      });
+    }
+
+    for (var i = 0; i < Math.min(CONCORRENCIA, itens.length); i++) processarProximo();
+  }
+
+  document.getElementById("btn-verificar-fotos").addEventListener("click", verificarFotos);
+  filtroFoto.addEventListener("change", atualizarTabela);
+
+  document.getElementById("btn-importar").addEventListener("click", function () {
+    document.getElementById("campo-arquivo-importar").click();
+  });
+
+  document.getElementById("campo-arquivo-importar").addEventListener("change", function (e) {
+    var arquivo = e.target.files && e.target.files[0];
+    e.target.value = ""; // permite selecionar o mesmo arquivo de novo depois
+    if (!arquivo) return;
+
+    var nomeMin = arquivo.name.toLowerCase();
+    var leitor = new FileReader();
+
+    if (nomeMin.endsWith(".csv")) {
+      leitor.onload = function () {
+        var linhas = parseCSV(String(leitor.result));
+        salvarEstadoParaDesfazer();
+        finalizarImportacao(importarLinhas(linhas));
+      };
+      leitor.readAsText(arquivo, "UTF-8");
+    } else if (nomeMin.endsWith(".xlsx") || nomeMin.endsWith(".xls")) {
+      if (typeof XLSX === "undefined") {
+        alert("Não consegui carregar o suporte a arquivos Excel (isso normalmente acontece sem internet no momento de abrir a página). Tente novamente com internet, ou exporte a planilha como .csv e importe de novo.");
+        return;
+      }
+      leitor.onload = function () {
+        try {
+          var workbook = XLSX.read(new Uint8Array(leitor.result), { type: "array" });
+          var primeiraAba = workbook.Sheets[workbook.SheetNames[0]];
+          var linhas = XLSX.utils.sheet_to_json(primeiraAba, { header: 1, raw: false, defval: "" });
+          salvarEstadoParaDesfazer();
+          finalizarImportacao(importarLinhas(linhas));
+        } catch (erro) {
+          alert("Não consegui ler esse arquivo Excel. Confira se ele não está corrompido ou tente exportá-lo como .csv.");
+        }
+      };
+      leitor.readAsArrayBuffer(arquivo);
+    } else {
+      alert("Formato não reconhecido. Use um arquivo .csv, .xlsx ou .xls.");
+    }
+  });
+
+  // ---------------- Gerenciar categorias ----------------
+  var modalCategorias = document.getElementById("modal-categorias");
+  var listaCategoriasModal = document.getElementById("lista-categorias-modal");
+
+  function contarPorCategoria(cat) {
+    return dados.filter(function (d) { return d !== null && d.categoria === cat; }).length;
+  }
+
+  function renderizarModalCategorias() {
+    listaCategoriasModal.innerHTML = "";
+    categoriasDisponiveis.forEach(function (cat, idx) {
+      var linha = document.createElement("div");
+      linha.className = "linha-categoria";
+
+      var input = document.createElement("input");
+      input.type = "text"; input.value = cat; input.dataset.original = cat;
+
+      var contagem = document.createElement("span");
+      contagem.className = "contagem-cat";
+      contagem.textContent = contarPorCategoria(cat) + " produto(s)";
+
+      linha.appendChild(input); linha.appendChild(contagem);
+      listaCategoriasModal.appendChild(linha);
+
+      input.addEventListener("change", function () {
+        var novoNome = input.value.trim();
+        var nomeAntigo = input.dataset.original;
+        if (!novoNome || novoNome === nomeAntigo) { input.value = nomeAntigo; return; }
+
+        salvarEstadoParaDesfazer();
+        dados.forEach(function (d) {
+          if (d && d.categoria === nomeAntigo) d.categoria = novoNome;
+        });
+
+        if (categoriasDisponiveis.indexOf(novoNome) === -1) {
+          categoriasDisponiveis[idx] = novoNome;
+        } else {
+          categoriasDisponiveis.splice(idx, 1);
+        }
+        atualizarOpcoesCategorias();
+        renderizarModalCategorias();
+        salvarRascunho();
+      });
+    });
+  }
+
+  document.getElementById("btn-categorias").addEventListener("click", function () {
+    renderizarModalCategorias();
+    modalCategorias.classList.add("aberto");
+  });
+  document.getElementById("btn-fechar-categorias").addEventListener("click", function () {
+    modalCategorias.classList.remove("aberto");
+  });
+  modalCategorias.addEventListener("click", function (e) { if (e.target === modalCategorias) modalCategorias.classList.remove("aberto"); });
+
+  document.getElementById("btn-nova-categoria").addEventListener("click", function () {
+    var campo = document.getElementById("campo-nova-categoria");
+    var nome = campo.value.trim();
+    if (!nome) return;
+    if (categoriasDisponiveis.indexOf(nome) !== -1) { alert("Essa categoria já existe."); return; }
+    salvarEstadoParaDesfazer();
+    categoriasDisponiveis.push(nome);
+    campo.value = "";
+    atualizarOpcoesCategorias();
+    renderizarModalCategorias();
+    salvarRascunho();
+  });
+
+  // ---------------- Inicialização ----------------
+  verificarRascunhoSalvo();
+  renderizarTudo();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="config.js"></script>
+<title>Topmix - Catálogo de Produtos</title>
+<meta name="description" content="Catálogo completo de soldas, abrasivos e tintas da Topmix. Pesquise, monte seu orçamento e envie direto pelo WhatsApp.">
+<link rel="icon" id="favicon-link" href="">
+<link rel="manifest" id="manifest-link">
+<link rel="apple-touch-icon" id="apple-touch-icon" href="">
+<meta name="theme-color" id="meta-theme-color" content="#141b28">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" id="apple-mobile-web-app-title" content="Catálogo">
+<script>
+(function () {
+  "use strict";
+  if (typeof SITE_CONFIG === "undefined") return;
+
+  // Cores da marca (sobrescreve as variáveis CSS via estilo inline no <html>,
+  // isso sempre "ganha" da folha de estilos, então funciona mesmo antes dela carregar)
+  if (SITE_CONFIG.cores) {
+    Object.keys(SITE_CONFIG.cores).forEach(function (chave) {
+      document.documentElement.style.setProperty("--" + chave, SITE_CONFIG.cores[chave]);
+    });
+  }
+
+  // Favicon
+  var favicon = document.getElementById("favicon-link");
+  if (favicon && SITE_CONFIG.logoBase64) favicon.href = SITE_CONFIG.logoBase64;
+
+  // PWA: monta o manifest.json "na hora" (usando os dados do config.js),
+  // assim o catálogo pode virar um app instalável sem precisar de um
+  // segundo arquivo pra manter atualizado a cada cliente novo.
+  if (SITE_CONFIG.logoBase64) {
+    var corFundo = (SITE_CONFIG.cores && SITE_CONFIG.cores["navy-900"]) ? SITE_CONFIG.cores["navy-900"] : "#141b28";
+    var nomeApp = SITE_CONFIG.nome || "Catálogo";
+    var nomeInstalado = SITE_CONFIG.nomeInstalado || "Catálogo";
+    var dadosManifest = {
+      name: nomeApp + " - Catálogo de Produtos",
+      short_name: nomeInstalado,
+      start_url: new URL("index.html", location.href).href,
+      scope: new URL(".", location.href).href,
+      display: "standalone",
+      background_color: corFundo,
+      theme_color: corFundo,
+      icons: [
+        { src: SITE_CONFIG.logoBase64, sizes: "192x192", type: "image/webp", purpose: "any" },
+        { src: SITE_CONFIG.logoBase64, sizes: "512x512", type: "image/webp", purpose: "any" }
+      ]
+    };
+    var blobManifest = new Blob([JSON.stringify(dadosManifest)], { type: "application/json" });
+    document.getElementById("manifest-link").href = URL.createObjectURL(blobManifest);
+    document.getElementById("apple-touch-icon").href = SITE_CONFIG.logoBase64;
+    document.getElementById("meta-theme-color").setAttribute("content", corFundo);
+    document.getElementById("apple-mobile-web-app-title").setAttribute("content", nomeInstalado);
+  }
+
+  // Título da aba e descrição (SEO)
+  if (SITE_CONFIG.tituloAba) document.title = SITE_CONFIG.tituloAba;
+  var metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc && SITE_CONFIG.descricaoMeta) metaDesc.setAttribute("content", SITE_CONFIG.descricaoMeta);
+
+  // Google Analytics (opcional -- só carrega se um ID foi configurado)
+  if (SITE_CONFIG.googleAnalyticsId) {
+    var scriptGA = document.createElement("script");
+    scriptGA.async = true;
+    scriptGA.src = "https://www.googletagmanager.com/gtag/js?id=" + SITE_CONFIG.googleAnalyticsId;
+    document.head.appendChild(scriptGA);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag("js", new Date());
+    window.gtag("config", SITE_CONFIG.googleAnalyticsId);
+  }
+
+  // Registra o service worker (deixa o catálogo instalável e funcionando
+  // mesmo com internet ruim). Precisa do arquivo sw.js na mesma pasta.
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+})();
+</script>
+
+<style>
+  :root{
+    --navy-900:#141b28;
+    --navy-800:#1f2a38;
+    --navy-600:#4a5467;
+    --gray-100:#f6f7f9;
+    --gray-200:#e7ebf0;
+    --gray-400:#94a3b8;
+    --gold:#ffd035;
+    --orange:#ff801a;
+    --whatsapp:#25d366;
+    --whatsapp-dark:#1ebe5b;
+    --white:#ffffff;
+    --radius:10px;
+    --shadow-sm:0 1px 3px rgba(20,27,40,.08);
+    --shadow-md:0 10px 28px rgba(20,27,40,.12);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--gray-100);
+    color:var(--navy-800);
+    padding-bottom:5.5rem;
+  }
+  .faixa-topo{height:5px;background:linear-gradient(90deg,var(--orange),var(--gold));}
+
+  header.topo{
+    background:var(--white);
+    padding:1.5rem 1rem 1.25rem;
+    text-align:center;
+    box-shadow:var(--shadow-sm);
+  }
+  header.topo img{max-width:220px;width:100%;height:auto;display:block;margin:0 auto .6rem;}
+  header.topo p{margin:0;color:var(--navy-600);font-size:.95rem;}
+
+  .barra-busca-wrap{
+    position:sticky;top:0;z-index:80;
+    background:var(--gray-100);
+    padding:.75rem 1rem;
+    border-bottom:1px solid var(--gray-200);
+  }
+  .barra-busca{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:.4rem;}
+  .campo-busca{position:relative;}
+  .campo-busca span{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);font-size:1rem;opacity:.6;pointer-events:none;}
+  #campo-pesquisa{
+    width:100%;padding:.8rem 1rem .8rem 2.4rem;font-size:1rem;
+    border:1.5px solid var(--gray-200);border-radius:8px;outline:none;
+    background:var(--white);color:var(--navy-800);
+    -webkit-appearance:none;
+  }
+  #campo-pesquisa:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,128,26,.15);}
+  #filtro-categoria{
+    width:100%;padding:.6rem .8rem;font-size:.88rem;font-weight:600;color:var(--navy-800);
+    border:1.5px solid var(--gray-200);border-radius:8px;background:var(--white);outline:none;
+  }
+  #filtro-categoria:focus{border-color:var(--orange);}
+  .linha-info{display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+  .contador{font-size:.82rem;color:var(--navy-600);font-weight:600;padding-left:.15rem;}
+  .btn-pdf{
+    background:var(--white);color:var(--navy-800);border:1.5px solid var(--gray-200);
+    padding:.4rem .75rem;border-radius:7px;font-size:.78rem;font-weight:700;
+    cursor:pointer;white-space:nowrap;flex-shrink:0;
+  }
+  .btn-pdf:hover{border-color:var(--orange);}
+  .btn-pdf:disabled{opacity:.6;cursor:wait;}
+
+  main.grid{
+    max-width:1200px;margin:1.25rem auto 0;padding:0 1rem;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;
+  }
+
+  .produto-card{
+    background:var(--white);border-radius:var(--radius);overflow:hidden;
+    box-shadow:var(--shadow-sm);border:1px solid var(--gray-200);
+    display:flex;flex-direction:column;transition:box-shadow .15s,transform .15s;
+  }
+  .produto-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+
+  .produto-imagem-container{
+    position:relative;width:100%;height:150px;background:var(--gray-100);
+    display:flex;align-items:center;justify-content:center;
+    border-bottom:1px solid var(--gray-200);overflow:hidden;
+  }
+  .img-placeholder{font-size:2.1rem;opacity:.35;}
+  .produto-foto{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:8px;
+    background:var(--white);opacity:0;transition:opacity .25s;
+  }
+  .produto-foto.carregada{opacity:1;}
+
+  .produto-info{padding:.9rem;display:flex;flex-direction:column;flex-grow:1;gap:.55rem;}
+  .produto-codigo{
+    align-self:flex-start;background:var(--navy-800);color:var(--white);
+    font-size:.7rem;font-weight:700;letter-spacing:.03em;
+    padding:.2rem .5rem;border-radius:4px;
+  }
+  .produto-descricao{
+    font-size:.87rem;font-weight:600;color:var(--navy-900);
+    margin:0;line-height:1.35;flex-grow:1;min-height:2.4em;
+  }
+
+  .stepper{display:flex;align-items:stretch;border:1.5px solid var(--gray-200);border-radius:7px;overflow:hidden;height:38px;}
+  .btn-qtd{
+    width:38px;border:none;background:var(--gray-100);color:var(--navy-800);
+    font-size:1.15rem;font-weight:700;cursor:pointer;flex-shrink:0;
+  }
+  .btn-qtd:active{background:var(--gray-200);}
+  .qtd-input-card{
+    flex-grow:1;min-width:0;border:none;border-left:1.5px solid var(--gray-200);border-right:1.5px solid var(--gray-200);
+    text-align:center;font-size:.95rem;font-weight:600;color:var(--navy-800);
+  }
+
+  .mensagem-flutuante{
+    position:fixed;left:50%;bottom:4.8rem;transform:translate(-50%, 12px);
+    background:var(--navy-900);color:var(--white);
+    padding:.65rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;
+    box-shadow:var(--shadow-md);z-index:150;max-width:90%;text-align:center;
+    opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;
+  }
+  .mensagem-flutuante.visivel{opacity:1;transform:translate(-50%, 0);}
+
+  .btn-add{
+    background:linear-gradient(90deg,var(--orange),var(--gold));
+    color:var(--navy-900);border:none;padding:.6rem;border-radius:7px;
+    font-weight:700;font-size:.85rem;cursor:pointer;transition:filter .15s,transform .1s;
+  }
+  .btn-add:hover{filter:brightness(1.05);}
+  .btn-add:active{transform:scale(.98);}
+  .btn-add.confirmado{background:var(--navy-800);color:var(--white);}
+
+  .vazio{grid-column:1/-1;text-align:center;padding:3rem 1rem;color:var(--navy-600);background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);}
+  .sentinela{height:1px;}
+
+  .barra-carrinho{
+    position:fixed;bottom:0;left:0;right:0;z-index:100;
+    background:var(--navy-800);color:var(--white);
+    padding:.85rem 1.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;
+    box-shadow:0 -6px 18px rgba(0,0,0,.18);
+  }
+  .barra-carrinho strong{font-size:.92rem;font-weight:600;}
+  .btn-ver-orcamento{
+    background:linear-gradient(90deg,var(--orange),var(--gold));color:var(--navy-900);border:none;
+    padding:.7rem 1.3rem;border-radius:7px;font-weight:700;font-size:.9rem;cursor:pointer;white-space:nowrap;
+  }
+
+  .btn-topo{
+    position:fixed;right:1rem;bottom:5.2rem;z-index:90;width:42px;height:42px;border-radius:50%;
+    background:var(--white);border:1px solid var(--gray-200);box-shadow:var(--shadow-md);
+    font-size:1.1rem;cursor:pointer;color:var(--navy-800);display:none;align-items:center;justify-content:center;
+  }
+  .btn-topo.visivel{display:flex;}
+
+  .modal{display:none;position:fixed;inset:0;background:rgba(20,27,40,.6);z-index:200;justify-content:center;align-items:center;padding:1rem;}
+  .modal.aberto{display:flex;}
+  .modal-content{background:var(--white);border-radius:var(--radius);width:100%;max-width:680px;max-height:88vh;overflow-y:auto;padding:1.5rem;}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--gray-200);padding-bottom:.9rem;margin-bottom:1rem;}
+  .modal-header h2{margin:0;font-size:1.15rem;color:var(--navy-900);}
+  .btn-fechar-x{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--navy-600);line-height:1;padding:.2rem .4rem;}
+
+  .tabela-orcamento{width:100%;border-collapse:collapse;margin-bottom:1.25rem;font-size:.88rem;}
+  .tabela-orcamento th{text-align:left;padding:.5rem .4rem;border-bottom:2px solid var(--gray-200);color:var(--navy-600);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;}
+  .tabela-orcamento td{padding:.55rem .4rem;border-bottom:1px solid var(--gray-200);vertical-align:middle;}
+  .qtd-input{width:56px;padding:.35rem;text-align:center;border:1.5px solid var(--gray-200);border-radius:5px;}
+  .btn-remover{background:#fee2e2;color:#b91c1c;border:none;padding:.4rem .6rem;border-radius:5px;cursor:pointer;font-weight:600;font-size:.78rem;white-space:nowrap;}
+
+  .secao-vendedores{background:var(--gray-100);padding:1.1rem;border-radius:8px;margin-bottom:1rem;text-align:center;}
+  .secao-vendedores p{font-weight:700;margin:0 0 .7rem;color:var(--navy-900);font-size:.9rem;}
+  .botoes-vendedores{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;}
+  .btn-whatsapp{background:var(--whatsapp);color:var(--white);border:none;padding:.7rem 1.1rem;border-radius:7px;font-weight:700;font-size:.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:.45rem;}
+  .btn-whatsapp:hover{background:var(--whatsapp-dark);}
+  .rodape-modal{display:flex;gap:.6rem;flex-wrap:wrap;}
+  .btn-limpar{background:none;border:1.5px solid var(--gray-200);color:var(--navy-600);padding:.7rem 1rem;border-radius:7px;cursor:pointer;font-weight:600;font-size:.85rem;flex:1;}
+  .btn-continuar{background:var(--navy-800);color:var(--white);border:none;padding:.7rem 1rem;border-radius:7px;cursor:pointer;font-weight:600;font-size:.85rem;flex:2;}
+
+  @media (max-width:480px){
+    main.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem;}
+    .produto-imagem-container{height:110px;}
+    .barra-carrinho{padding:.7rem .9rem;}
+    .barra-carrinho strong{font-size:.8rem;}
+  }
+
+  #area-impressao{display:none;}
+  @media print{
+    @page{margin:12mm;}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
+    body *{visibility:hidden;}
+    #area-impressao, #area-impressao *{visibility:visible;}
+    #area-impressao{display:block;position:absolute;top:0;left:0;width:100%;}
+    .capa-pdf{page-break-after:always;text-align:center;padding-top:18%;}
+    .capa-pdf img{max-width:280px;margin-bottom:2rem;}
+    .capa-pdf .titulo-destaque{font-size:2.6rem;font-weight:800;color:var(--orange);letter-spacing:.02em;line-height:1.15;}
+    .capa-pdf .titulo-principal{font-size:2.6rem;font-weight:800;color:var(--navy-900);letter-spacing:.02em;line-height:1.15;margin-bottom:.9rem;}
+    .capa-pdf p{color:var(--navy-600);font-size:1.05rem;margin:.2rem 0;letter-spacing:.05em;}
+    .categoria-pdf-titulo{
+      font-size:1.1rem;font-weight:800;color:var(--white);background:var(--navy-800);
+      padding:.4rem 6mm;margin:.6rem 0 .3rem;text-transform:uppercase;letter-spacing:.04em;
+      break-after:avoid;break-inside:avoid;
+    }
+
+    .categoria-pdf-titulo.nova-pagina{page-break-before:always;break-before:page;}
+    .pagina-foto-cheia{page-break-after:always;text-align:center;}
+    .pagina-foto-cheia.contracapa{page-break-before:always;page-break-after:auto;}
+    .pagina-foto-cheia img{width:100%;height:auto;display:block;}
+    .lista-pdf{display:grid;grid-template-columns:1fr 1fr;gap:.3rem 1.2rem;padding:0 6mm;}
+    .item-pdf{display:flex;gap:.5rem;align-items:center;border-bottom:1px solid var(--gray-200);padding:.3rem 0;break-inside:avoid;}
+    .item-pdf img{width:42px;height:42px;object-fit:contain;border:1px solid var(--gray-200);flex-shrink:0;}
+    .item-pdf .sem-foto{
+      width:42px;height:42px;border:1px solid var(--gray-200);flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--gray-400);
+    }
+    .item-pdf .txt{font-size:.68rem;line-height:1.25;}
+    .item-pdf .cod{font-weight:700;}
+  }
+
+</style>
+<style>
+  .rodape-site{display:none;background:var(--navy-900);color:var(--gray-200);padding:2rem 1.25rem 1rem;margin-top:2rem;font-size:.85rem;}
+  .rodape-conteudo{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:2rem;justify-content:space-between;}
+  .rodape-coluna{display:flex;flex-direction:column;gap:.45rem;min-width:200px;}
+  .rodape-coluna strong{font-size:1rem;color:var(--white);margin-bottom:.2rem;}
+  .rodape-redes a{color:var(--gray-200);text-decoration:none;}
+  .rodape-redes a:hover{color:var(--gold);text-decoration:underline;}
+  .rodape-creditos{max-width:1100px;margin:1.5rem auto 0;padding-top:1rem;border-top:1px solid var(--navy-800);text-align:center;font-size:.78rem;color:var(--gray-400);}
+  .rodape-creditos a{color:var(--gray-400);text-decoration:underline;}
+  @media print{ .rodape-site{display:none !important;} }
+</style>
+</head>
+<body>
+
+<div class="faixa-topo"></div>
+
+<header class="topo">
+  <img id="logo-img" src="" alt="">
+  <p>Consulte nossos produtos e monte seu orçamento — envie direto pelo WhatsApp</p>
+</header>
+
+<div class="barra-busca-wrap">
+  <div class="barra-busca">
+    <div class="campo-busca">
+      <span aria-hidden="true">🔍</span>
+      <input type="search" id="campo-pesquisa" placeholder="Buscar por código ou descrição do produto..." aria-label="Buscar produto" autocomplete="off">
+    </div>
+    <select id="filtro-categoria" aria-label="Filtrar por categoria">
+      <option value="">Todas as categorias</option>
+    </select>
+    <div class="linha-info">
+      <span id="contador-busca" class="contador"></span>
+      <button class="btn-pdf" id="btn-pdf" title="Gerar o catálogo completo em PDF">🖨️ PDF do catálogo</button>
+    </div>
+  </div>
+</div>
+
+<main class="grid" id="grid-produtos"></main>
+<div class="sentinela" id="sentinela"></div>
+
+<button class="btn-topo" id="btn-topo" aria-label="Voltar ao topo" title="Voltar ao topo">↑</button>
+
+<div class="mensagem-flutuante" id="mensagem-flutuante" role="status" aria-live="polite"></div>
+
+
+<footer class="rodape-site" id="rodape-site">
+  <div class="rodape-conteudo">
+    <div class="rodape-coluna" id="rodape-info"></div>
+    <div class="rodape-coluna rodape-redes" id="rodape-redes"></div>
+  </div>
+  <div class="rodape-creditos" id="rodape-creditos"></div>
+</footer>
+
+<div id="area-impressao" aria-hidden="true"></div>
+
+<div class="barra-carrinho">
+  <strong id="qtd-itens-barra">Nenhum produto selecionado</strong>
+  <button class="btn-ver-orcamento" id="btn-ver-orcamento">Ver orçamento</button>
+</div>
+
+<div class="modal" id="modal-orcamento">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Seu orçamento</h2>
+      <button class="btn-fechar-x" id="btn-fechar-x" aria-label="Fechar">✕</button>
+    </div>
+    <table class="tabela-orcamento">
+      <thead><tr><th>Cód</th><th>Descrição</th><th>Qtd</th><th></th></tr></thead>
+      <tbody id="lista-orcamento"></tbody>
+    </table>
+    <div class="secao-vendedores">
+      <p>Enviar este orçamento para:</p>
+      <div class="botoes-vendedores" id="botoes-vendedores"></div>
+    </div>
+    <div class="rodape-modal">
+      <button class="btn-limpar" id="btn-limpar">Limpar tudo</button>
+      <button class="btn-continuar" id="btn-continuar">Continuar comprando</button>
+    </div>
+  </div>
+</div>
+
+<script src="produtos.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // Aplica dados do config.js no cabeçalho (logo, alt, subtítulo)
+  if (typeof SITE_CONFIG !== "undefined") {
+    var logoHeader = document.getElementById("logo-img");
+    if (logoHeader) {
+      logoHeader.src = SITE_CONFIG.logoBase64 || "";
+      logoHeader.alt = SITE_CONFIG.logoAlt || SITE_CONFIG.nome || "";
+    }
+  }
+
+  // Base de dados completa: 942 produtos [codigo, descricao]
+  // Base de dados carregada de produtos.js (var PRODUTOS_DADOS).
+  // Cada item: {codigo, descricao, categoria, ativo}
+  var DADOS = (typeof PRODUTOS_DADOS !== "undefined") ? PRODUTOS_DADOS : [];
+
+  var PRODUTOS = [];          // [codigo, descricao] só dos produtos ativos
+  var PRODUTOS_MAP = new Map();   // codigo -> descricao
+  var CATEGORIA_MAP = new Map();  // codigo -> categoria
+  var CATEGORIAS_DISPONIVEIS = [];
+  (function () {
+    var vistas = new Set();
+    // Ordem alfabética por descrição dentro de cada categoria: facilita achar
+    // o item (produtos parecidos ficam juntos), o que ajuda mais na conversão
+    // do que ordenar por código (que é só a ordem que entrou no sistema).
+    DADOS.slice().sort(function (a, b) { return a.descricao.localeCompare(b.descricao, "pt-BR"); }).forEach(function (p) {
+      if (!p.ativo) return;
+      PRODUTOS.push([p.codigo, p.descricao]);
+      PRODUTOS_MAP.set(String(p.codigo), p.descricao);
+      CATEGORIA_MAP.set(String(p.codigo), p.categoria || "Outros");
+      if (!vistas.has(p.categoria)) { vistas.add(p.categoria); CATEGORIAS_DISPONIVEIS.push(p.categoria || "Outros"); }
+    });
+    CATEGORIAS_DISPONIVEIS.sort();
+  })();
+
+  var filtroCategoria = document.getElementById("filtro-categoria");
+  CATEGORIAS_DISPONIVEIS.forEach(function (cat) {
+    var opt = document.createElement("option");
+    opt.value = cat; opt.textContent = cat;
+    filtroCategoria.appendChild(opt);
+  });
+
+  var CHAVE_CARRINHO = "topmix_orcamento_v1";
+  var TAMANHO_PAGINA = 60;
+  var LIMITE_QTD = 999;
+
+  var carrinho = carregarCarrinho();
+  var listaFiltrada = PRODUTOS;
+  var paginaAtual = 0;
+
+  var grid = document.getElementById("grid-produtos");
+  var contador = document.getElementById("contador-busca");
+  var campoPesquisa = document.getElementById("campo-pesquisa");
+  var barraQtd = document.getElementById("qtd-itens-barra");
+  var modal = document.getElementById("modal-orcamento");
+  var tbody = document.getElementById("lista-orcamento");
+  var btnTopo = document.getElementById("btn-topo");
+  var btnPdf = document.getElementById("btn-pdf");
+  var areaImpressao = document.getElementById("area-impressao");
+  var elMensagem = document.getElementById("mensagem-flutuante");
+  var timeoutMensagem = null;
+
+  // Registra um evento no Google Analytics (se estiver configurado); se não
+  // estiver, simplesmente não faz nada -- nenhuma outra parte do catálogo
+  // precisa se preocupar em checar se o analytics está ligado ou não.
+  function registrarEvento(nome, parametros) {
+    if (typeof window.gtag === "function") window.gtag("event", nome, parametros || {});
+  }
+
+  function mostrarMensagem(texto) {
+    elMensagem.textContent = texto;
+    elMensagem.classList.add("visivel");
+    clearTimeout(timeoutMensagem);
+    timeoutMensagem = setTimeout(function () { elMensagem.classList.remove("visivel"); }, 2400);
+  }
+
+  // Aceita só dígitos e nunca deixa passar de LIMITE_QTD; avisa quando corrige algo
+  function sanitizarQuantidade(valorBruto) {
+    var somenteNumeros = valorBruto.replace(/[^0-9]/g, "");
+    var teveLetra = somenteNumeros.length !== valorBruto.length;
+    var excedeu = false;
+    if (somenteNumeros !== "") {
+      var n = parseInt(somenteNumeros, 10);
+      if (n > LIMITE_QTD) { n = LIMITE_QTD; excedeu = true; }
+      somenteNumeros = String(n);
+    }
+    return { valor: somenteNumeros, teveLetra: teveLetra, excedeu: excedeu };
+  }
+
+  function carregarCarrinho() {
+    try {
+      var salvo = JSON.parse(localStorage.getItem(CHAVE_CARRINHO) || "[]");
+      return salvo.filter(function (item) { return PRODUTOS_MAP.has(String(item.codigo)); });
+    } catch (e) { return []; }
+  }
+
+  function salvarCarrinho() {
+    try { localStorage.setItem(CHAVE_CARRINHO, JSON.stringify(carrinho)); } catch (e) {}
+  }
+
+  function normalizar(texto) {
+    return String(texto).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function criarCard(produto) {
+    var codigo = produto[0], descricao = produto[1];
+    var card = document.createElement("div");
+    card.className = "produto-card";
+    card.dataset.codigo = codigo;
+    card.innerHTML =
+      '<div class="produto-imagem-container">' +
+        '<span class="img-placeholder" aria-hidden="true">🧰</span>' +
+        '<img class="produto-foto" loading="lazy" decoding="async">' +
+      '</div>' +
+      '<div class="produto-info">' +
+        '<span class="produto-codigo"></span>' +
+        '<h2 class="produto-descricao"></h2>' +
+        '<div class="stepper">' +
+          '<button type="button" class="btn-qtd" data-acao="menos" aria-label="Diminuir quantidade">−</button>' +
+          '<input type="text" class="qtd-input-card" value="1" inputmode="numeric" pattern="[0-9]*" maxlength="3" aria-label="Quantidade">' +
+          '<button type="button" class="btn-qtd" data-acao="mais" aria-label="Aumentar quantidade">+</button>' +
+        '</div>' +
+        '<button type="button" class="btn-add">+ Adicionar ao orçamento</button>' +
+      '</div>';
+
+    card.querySelector(".produto-codigo").textContent = "CÓD " + codigo;
+    var titulo = card.querySelector(".produto-descricao");
+    titulo.textContent = descricao;
+
+    var img = card.querySelector(".produto-foto");
+    img.alt = descricao;
+    img.src = "img/" + codigo + ".jpg";
+    img.addEventListener("load", function () { img.classList.add("carregada"); });
+    img.addEventListener("error", function () { img.style.display = "none"; });
+
+    return card;
+  }
+
+  function renderizarPagina() {
+    var inicio = paginaAtual * TAMANHO_PAGINA;
+    var pagina = listaFiltrada.slice(inicio, inicio + TAMANHO_PAGINA);
+    if (pagina.length === 0 && paginaAtual === 0) {
+      grid.innerHTML = '<div class="vazio">Nenhum produto encontrado. Tente outro termo de busca.</div>';
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    pagina.forEach(function (p) { frag.appendChild(criarCard(p)); });
+    grid.appendChild(frag);
+    paginaAtual++;
+  }
+
+  function atualizarContador(termo, categoria) {
+    if (!termo && !categoria) {
+      contador.textContent = PRODUTOS.length + " produtos no catálogo";
+    } else if (categoria && !termo) {
+      contador.textContent = listaFiltrada.length + ' em "' + categoria + '"';
+    } else if (termo && !categoria) {
+      contador.textContent = listaFiltrada.length + ' resultado(s) para "' + termo + '"';
+    } else {
+      contador.textContent = listaFiltrada.length + ' resultado(s) para "' + termo + '" em "' + categoria + '"';
+    }
+  }
+
+  function filtrarEProduzir() {
+    var termoOriginal = campoPesquisa.value.trim();
+    var termo = normalizar(termoOriginal);
+    var categoria = filtroCategoria.value;
+    listaFiltrada = PRODUTOS.filter(function (p) {
+      var passaTexto = !termo || String(p[0]).indexOf(termo) !== -1 || normalizar(p[1]).indexOf(termo) !== -1;
+      var passaCategoria = !categoria || CATEGORIA_MAP.get(String(p[0])) === categoria;
+      return passaTexto && passaCategoria;
+    });
+    paginaAtual = 0;
+    grid.innerHTML = "";
+    renderizarPagina();
+    atualizarContador(termoOriginal, categoria);
+    registrarBuscaComAtraso(termoOriginal, categoria);
+  }
+
+  // Só registra a busca no analytics depois de 1,2s sem mudanças (evita
+  // mandar um evento a cada letra digitada) e nunca registra busca vazia.
+  var timeoutAnalyticsBusca = null;
+  function registrarBuscaComAtraso(termo, categoria) {
+    clearTimeout(timeoutAnalyticsBusca);
+    timeoutAnalyticsBusca = setTimeout(function () {
+      if (!termo && !categoria) return;
+      registrarEvento("busca_catalogo", {
+        termo_busca: termo || "(vazio)",
+        categoria: categoria || "(todas)"
+      });
+    }, 1200);
+  }
+
+  var timeoutBusca = null;
+  campoPesquisa.addEventListener("input", function () {
+    clearTimeout(timeoutBusca);
+    timeoutBusca = setTimeout(filtrarEProduzir, 150);
+  });
+  filtroCategoria.addEventListener("change", filtrarEProduzir);
+
+  var observador = new IntersectionObserver(function (entradas) {
+    entradas.forEach(function (entrada) {
+      if (entrada.isIntersecting && paginaAtual * TAMANHO_PAGINA < listaFiltrada.length) {
+        renderizarPagina();
+      }
+    });
+  }, { rootMargin: "400px" });
+  observador.observe(document.getElementById("sentinela"));
+
+  // Delegação de eventos no grid (leve: um único listener para todos os cards)
+  grid.addEventListener("click", function (e) {
+    var btnQtd = e.target.closest(".btn-qtd");
+    if (btnQtd) {
+      var input = btnQtd.parentElement.querySelector(".qtd-input-card");
+      var valor = parseInt(input.value, 10) || 1;
+      if (btnQtd.dataset.acao === "mais") {
+        if (valor >= LIMITE_QTD) { mostrarMensagem("Quantidade máxima: 999 unidades."); valor = LIMITE_QTD; }
+        else { valor += 1; }
+      } else {
+        valor = Math.max(1, valor - 1);
+      }
+      input.value = valor;
+      return;
+    }
+    var btnAdd = e.target.closest(".btn-add");
+    if (btnAdd) {
+      var card = btnAdd.closest(".produto-card");
+      var codigo = card.dataset.codigo;
+      var inputQtd = card.querySelector(".qtd-input-card");
+      var qtd = parseInt(inputQtd.value, 10);
+      if (!qtd || qtd < 1) qtd = 1;
+      if (qtd > LIMITE_QTD) qtd = LIMITE_QTD;
+      adicionarAoCarrinho(codigo, qtd);
+      inputQtd.value = 1;
+      var textoOriginal = btnAdd.textContent;
+      btnAdd.textContent = "✓ Adicionado";
+      btnAdd.classList.add("confirmado");
+      setTimeout(function () { btnAdd.textContent = textoOriginal; btnAdd.classList.remove("confirmado"); }, 900);
+    }
+  });
+
+  // Sanitiza a quantidade enquanto o usuário digita (bloqueia letras, trava em 999)
+  grid.addEventListener("input", function (e) {
+    if (!e.target.classList.contains("qtd-input-card")) return;
+    var r = sanitizarQuantidade(e.target.value);
+    e.target.value = r.valor;
+    if (r.excedeu) mostrarMensagem("Quantidade máxima: 999 unidades.");
+    else if (r.teveLetra) mostrarMensagem("Digite apenas números.");
+  });
+  grid.addEventListener("focusout", function (e) {
+    if (!e.target.classList.contains("qtd-input-card")) return;
+    if (e.target.value === "" || parseInt(e.target.value, 10) < 1) e.target.value = 1;
+  });
+
+  function adicionarAoCarrinho(codigo, qtd) {
+    var descricao = PRODUTOS_MAP.get(String(codigo));
+    var item = carrinho.find(function (i) { return String(i.codigo) === String(codigo); });
+    if (item) {
+      item.qtd += qtd;
+      if (item.qtd > LIMITE_QTD) { item.qtd = LIMITE_QTD; mostrarMensagem("Quantidade máxima de 999 atingida para este item."); }
+    } else {
+      carrinho.push({ codigo: codigo, descricao: descricao, qtd: qtd });
+    }
+    salvarCarrinho();
+    atualizarBarra();
+  }
+
+  function atualizarBarra() {
+    var totalUn = carrinho.reduce(function (acc, i) { return acc + i.qtd; }, 0);
+    barraQtd.textContent = carrinho.length === 0
+      ? "Nenhum produto selecionado"
+      : carrinho.length + " produto(s) — " + totalUn + " un no orçamento";
+  }
+
+  function renderizarTabela() {
+    tbody.innerHTML = "";
+    if (carrinho.length === 0) {
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.colSpan = 4; td.style.textAlign = "center"; td.style.padding = "1.5rem";
+      td.textContent = "Nenhum produto selecionado.";
+      tr.appendChild(td); tbody.appendChild(tr);
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    carrinho.forEach(function (item, index) {
+      var tr = document.createElement("tr");
+
+      var tdCod = document.createElement("td"); tdCod.textContent = item.codigo;
+      var tdDesc = document.createElement("td"); tdDesc.textContent = item.descricao;
+
+      var tdQtd = document.createElement("td");
+      var inputQtd = document.createElement("input");
+      inputQtd.type = "text"; inputQtd.className = "qtd-input";
+      inputQtd.inputMode = "numeric"; inputQtd.setAttribute("pattern", "[0-9]*"); inputQtd.maxLength = 3;
+      inputQtd.value = item.qtd; inputQtd.dataset.index = index;
+      tdQtd.appendChild(inputQtd);
+
+      var tdAcao = document.createElement("td");
+      var btnRem = document.createElement("button");
+      btnRem.className = "btn-remover"; btnRem.textContent = "Remover"; btnRem.dataset.index = index;
+      tdAcao.appendChild(btnRem);
+
+      tr.appendChild(tdCod); tr.appendChild(tdDesc); tr.appendChild(tdQtd); tr.appendChild(tdAcao);
+      frag.appendChild(tr);
+    });
+    tbody.appendChild(frag);
+  }
+
+  tbody.addEventListener("input", function (e) {
+    if (!e.target.classList.contains("qtd-input")) return;
+    var r = sanitizarQuantidade(e.target.value);
+    e.target.value = r.valor;
+    if (r.excedeu) mostrarMensagem("Quantidade máxima: 999 unidades.");
+    else if (r.teveLetra) mostrarMensagem("Digite apenas números.");
+  });
+
+  tbody.addEventListener("change", function (e) {
+    if (e.target.classList.contains("qtd-input")) {
+      var idx = parseInt(e.target.dataset.index, 10);
+      var n = parseInt(e.target.value, 10);
+      if (!n || n < 1) n = 1;
+      if (n > LIMITE_QTD) n = LIMITE_QTD;
+      carrinho[idx].qtd = n;
+      e.target.value = n;
+      salvarCarrinho();
+      atualizarBarra();
+    }
+  });
+
+  tbody.addEventListener("click", function (e) {
+    var btn = e.target.closest(".btn-remover");
+    if (!btn) return;
+    var idx = parseInt(btn.dataset.index, 10);
+    carrinho.splice(idx, 1);
+    salvarCarrinho();
+    atualizarBarra();
+    renderizarTabela();
+  });
+
+  document.getElementById("btn-ver-orcamento").addEventListener("click", function () {
+    renderizarTabela();
+    modal.classList.add("aberto");
+  });
+  document.getElementById("btn-fechar-x").addEventListener("click", function () { modal.classList.remove("aberto"); });
+  document.getElementById("btn-continuar").addEventListener("click", function () { modal.classList.remove("aberto"); });
+  modal.addEventListener("click", function (e) { if (e.target === modal) modal.classList.remove("aberto"); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") modal.classList.remove("aberto"); });
+
+  document.getElementById("btn-limpar").addEventListener("click", function () {
+    if (carrinho.length === 0) return;
+    if (confirm("Remover todos os produtos do orçamento?")) {
+      carrinho = [];
+      salvarCarrinho();
+      atualizarBarra();
+      renderizarTabela();
+    }
+  });
+
+  // Cria os botões de vendedor a partir do config.js
+  var containerVendedores = document.getElementById("botoes-vendedores");
+  var nomeEmpresa = (typeof SITE_CONFIG !== "undefined" && SITE_CONFIG.nome) ? SITE_CONFIG.nome : "";
+  var listaVendedores = (typeof SITE_CONFIG !== "undefined" && SITE_CONFIG.vendedores) ? SITE_CONFIG.vendedores : [];
+  listaVendedores.forEach(function (v) {
+    var btn = document.createElement("button");
+    btn.className = "btn-whatsapp";
+    btn.dataset.numero = v.numero;
+    btn.dataset.nome = v.nome;
+    btn.textContent = "📲 " + v.nome;
+    btn.addEventListener("click", function () {
+      if (carrinho.length === 0) { alert("Adicione produtos antes de enviar."); return; }
+      var msg = "Olá " + v.nome + "! Gostaria de cotar os seguintes produtos" + (nomeEmpresa ? " da " + nomeEmpresa : "") + ":\n\n";
+      carrinho.forEach(function (i) { msg += "• Cód " + i.codigo + " - " + i.descricao + " (Qtd: " + i.qtd + ")\n"; });
+      var totalUnidades = carrinho.reduce(function (acc, i) { return acc + i.qtd; }, 0);
+      registrarEvento("orcamento_enviado", {
+        vendedor: v.nome,
+        qtd_produtos: carrinho.length,
+        qtd_unidades: totalUnidades
+      });
+      window.open("https://wa.me/" + v.numero + "?text=" + encodeURIComponent(msg), "_blank");
+    });
+    containerVendedores.appendChild(btn);
+  });
+
+  window.addEventListener("scroll", function () {
+    btnTopo.classList.toggle("visivel", window.scrollY > 900);
+  }, { passive: true });
+  btnTopo.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
+
+
+  function montarRodape() {
+    var cfg = (typeof SITE_CONFIG !== "undefined") ? SITE_CONFIG : {};
+    var rodapeEl = document.getElementById("rodape-site");
+    var infoEl = document.getElementById("rodape-info");
+    var redesEl = document.getElementById("rodape-redes");
+    var creditosEl = document.getElementById("rodape-creditos");
+    var r = cfg.rodape || {};
+    var temConteudo = false;
+
+    if (cfg.nome) {
+      var titulo = document.createElement("strong");
+      titulo.textContent = cfg.nome;
+      infoEl.appendChild(titulo);
+    }
+    if (r.endereco) {
+      var pEnd = document.createElement("p");
+      pEnd.textContent = "\uD83D\uDCCD " + r.endereco;
+      infoEl.appendChild(pEnd);
+      temConteudo = true;
+    }
+    if (Array.isArray(r.telefones)) {
+      r.telefones.forEach(function (tel) {
+        if (!tel) return;
+        var pTel = document.createElement("p");
+        pTel.textContent = "\uD83D\uDCDE " + tel;
+        infoEl.appendChild(pTel);
+        temConteudo = true;
+      });
+    }
+
+    var redes = [
+      { chave: "instagram", label: "Instagram", icone: "\uD83D\uDCF7" },
+      { chave: "facebook", label: "Facebook", icone: "\uD83D\uDCD8" },
+      { chave: "googleMaps", label: "Ver no Google", icone: "\uD83D\uDCCC" }
+    ];
+    redes.forEach(function (rede) {
+      if (!r[rede.chave]) return;
+      var a = document.createElement("a");
+      a.href = r[rede.chave];
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = rede.icone + " " + rede.label;
+      redesEl.appendChild(a);
+      temConteudo = true;
+    });
+
+    if (temConteudo) rodapeEl.style.display = "block";
+
+    if (cfg.creditos) {
+      if (cfg.creditosLink) {
+        var aCred = document.createElement("a");
+        aCred.href = cfg.creditosLink;
+        aCred.target = "_blank";
+        aCred.rel = "noopener";
+        aCred.textContent = cfg.creditos;
+        creditosEl.appendChild(aCred);
+      } else {
+        creditosEl.textContent = cfg.creditos;
+      }
+      rodapeEl.style.display = "block";
+    }
+  }
+
+  // Gera o PDF: monta uma capa + a lista completa (com fotos, quando existirem)
+  // dentro de #area-impressao, espera as fotos tentarem carregar e chama window.print().
+  function gerarPDF() {
+    if (btnPdf.disabled) return;
+    btnPdf.disabled = true;
+    var textoOriginal = btnPdf.textContent;
+    btnPdf.textContent = "Preparando PDF...";
+
+    areaImpressao.innerHTML = "";
+
+    var cfg = (typeof SITE_CONFIG !== "undefined") ? SITE_CONFIG : {};
+    var promessas = [];
+
+    // Capa: usa a foto configurada em SITE_CONFIG.capaPdf.imagemCapa se ela
+    // existir na pasta img/. Se não existir (ainda não foi colocada lá),
+    // cai automaticamente na capa de texto (logo + título) como antes.
+    function criarCapaTexto() {
+      var capa = document.createElement("div");
+      capa.className = "capa-pdf";
+      var logoImg = document.createElement("img");
+      logoImg.src = document.querySelector(".topo img").src;
+      logoImg.alt = cfg.logoAlt || cfg.nome || "";
+      var tituloDestaque = document.createElement("div");
+      tituloDestaque.className = "titulo-destaque";
+      tituloDestaque.textContent = "CATÁLOGO DE";
+      var tituloPrincipal = document.createElement("div");
+      tituloPrincipal.className = "titulo-principal";
+      tituloPrincipal.textContent = "PRODUTOS " + (cfg.nome ? cfg.nome.toUpperCase() : "");
+      var sub = document.createElement("p");
+      sub.textContent = cfg.subtitulo || "";
+      capa.appendChild(logoImg); capa.appendChild(tituloDestaque); capa.appendChild(tituloPrincipal); capa.appendChild(sub);
+      return capa;
+    }
+
+    if (cfg.capaPdf && cfg.capaPdf.imagemCapa) {
+      var capaFotoDiv = document.createElement("div");
+      capaFotoDiv.className = "pagina-foto-cheia";
+      var imgCapa = document.createElement("img");
+      imgCapa.alt = "";
+      promessas.push(new Promise(function (resolve) {
+        imgCapa.addEventListener("load", function () { resolve(); });
+        imgCapa.addEventListener("error", function () {
+          capaFotoDiv.remove();
+          areaImpressao.insertBefore(criarCapaTexto(), areaImpressao.firstChild);
+          resolve();
+        });
+        imgCapa.src = cfg.capaPdf.imagemCapa;
+      }));
+      capaFotoDiv.appendChild(imgCapa);
+      areaImpressao.appendChild(capaFotoDiv);
+    } else {
+      areaImpressao.appendChild(criarCapaTexto());
+    }
+
+    // Ordem pensada pra conversão: começa pelos consumíveis que os clientes
+    // recompram com mais frequência e urgência (eletrodo, disco, parafuso...),
+    // e termina nos itens de compra mais espaçada e ticket mais alto (máquinas).
+    var ORDEM_CATEGORIAS = [
+      "Soldagem", "Abrasivos", "Fixadores e Química", "Brocas e Acessórios",
+      "Tintas e Pintura", "EPI - Proteção", "Ferramentas Manuais",
+      "Ferramentas Elétricas", "Máquinas e Equipamentos"
+    ];
+    var categoriaFiltroAtual = filtroCategoria.value;
+    var porCategoria = new Map();
+    PRODUTOS.forEach(function (p) {
+      if (categoriaFiltroAtual && CATEGORIA_MAP.get(String(p[0])) !== categoriaFiltroAtual) return;
+      var cat = CATEGORIA_MAP.get(String(p[0])) || "Outros";
+      if (!porCategoria.has(cat)) porCategoria.set(cat, []);
+      porCategoria.get(cat).push(p);
+    });
+    var categoriasOrdenadas = Array.from(porCategoria.keys()).sort(function (a, b) {
+      var ia = ORDEM_CATEGORIAS.indexOf(a), ib = ORDEM_CATEGORIAS.indexOf(b);
+      if (ia === -1) ia = 999; if (ib === -1) ib = 999;
+      return ia !== ib ? ia - ib : a.localeCompare(b);
+    });
+
+    categoriasOrdenadas.forEach(function (cat, indiceCategoria) {
+      var tituloCat = document.createElement("h2");
+      tituloCat.className = "categoria-pdf-titulo" + (indiceCategoria > 0 ? " nova-pagina" : "");
+      tituloCat.textContent = cat;
+      areaImpressao.appendChild(tituloCat);
+
+      var lista = document.createElement("div");
+      lista.className = "lista-pdf";
+      porCategoria.get(cat).forEach(function (p) {
+        var item = document.createElement("div");
+        item.className = "item-pdf";
+
+        var img = document.createElement("img");
+        img.alt = "";
+        var semFoto = document.createElement("span");
+        semFoto.className = "sem-foto";
+        semFoto.textContent = "🧰";
+
+        promessas.push(new Promise(function (resolve) {
+          img.addEventListener("load", function () { semFoto.remove(); resolve(); });
+          img.addEventListener("error", function () { img.remove(); resolve(); });
+          img.src = "img/" + p[0] + ".jpg";
+        }));
+
+        var txt = document.createElement("div");
+        txt.className = "txt";
+        var cod = document.createElement("div"); cod.className = "cod"; cod.textContent = "Cód " + p[0];
+        var desc = document.createElement("div"); desc.textContent = p[1];
+        txt.appendChild(cod); txt.appendChild(desc);
+
+        item.appendChild(img); item.appendChild(semFoto); item.appendChild(txt);
+        lista.appendChild(item);
+      });
+      areaImpressao.appendChild(lista);
+    });
+
+    // Contracapa: só aparece se SITE_CONFIG.capaPdf.imagemContracapa existir
+    // na pasta img/. Se não existir, o catálogo simplesmente termina sem ela.
+    if (cfg.capaPdf && cfg.capaPdf.imagemContracapa) {
+      var contracapaDiv = document.createElement("div");
+      contracapaDiv.className = "pagina-foto-cheia contracapa";
+      var imgContra = document.createElement("img");
+      imgContra.alt = "";
+      promessas.push(new Promise(function (resolve) {
+        imgContra.addEventListener("load", function () { resolve(); });
+        imgContra.addEventListener("error", function () { contracapaDiv.remove(); resolve(); });
+        imgContra.src = cfg.capaPdf.imagemContracapa;
+      }));
+      contracapaDiv.appendChild(imgContra);
+      areaImpressao.appendChild(contracapaDiv);
+    }
+
+    var tempoLimite = new Promise(function (resolve) { setTimeout(resolve, 8000); });
+    Promise.race([Promise.all(promessas), tempoLimite]).then(function () {
+      btnPdf.textContent = textoOriginal;
+      btnPdf.disabled = false;
+      window.print();
+    });
+  }
+
+  btnPdf.addEventListener("click", function () {
+    registrarEvento("catalogo_pdf_baixado", { qtd_produtos_ativos: PRODUTOS.length });
+    gerarPDF();
+  });
+  window.addEventListener("afterprint", function () { areaImpressao.innerHTML = ""; });
+
+  // Inicialização
+  renderizarPagina();
+  atualizarContador("", "");
+  atualizarBarra();
+  montarRodape();
+})();
+</script>
+</body>
+</html>
