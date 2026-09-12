@@ -56,10 +56,10 @@ var SITE_CONFIG = {
   // Deixe vazio ("") o que não quiser mostrar -- o rodapé se ajusta sozinho.
   rodape: {
     endereco: "",
-    telefones: [],       // ex: ["(34) 99999-9999", "(34) 3333-3333"]
-    instagram: "",       // ex: "https://instagram.com/suaempresa"
+    telefones: ["(34) 98426-4335", "(34) 99870-8577"],       // ex: ["(34) 99999-9999", "(34) 3333-3333"]
+    instagram: "https://www.instagram.com/topmixudi/",       // ex: "https://instagram.com/suaempresa"
     facebook: "",        // ex: "https://facebook.com/suaempresa"
-    googleMaps: ""        // ex: link "Ver no Google" (Google Maps ou Google Meu Negócio)
+    googleMaps: "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhob00yUndOSEl6GAo"        // ex: link "Ver no Google" (Google Maps ou Google Meu Negócio)
   },
 
   // Assinatura de quem desenvolveu o catálogo (aparece no rodapé do site)
