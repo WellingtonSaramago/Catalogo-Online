@@ -277,8 +277,18 @@
     "Ferramentas Manuais", "Brocas e Acessórios", "Fixadores e Química",
     "EPI - Proteção", "Máquinas e Equipamentos", "Outros"
   ];
+  // Corrige categorias "sujas" vindas de importações antigas (espaço a mais,
+  // maiúscula/minúscula diferente etc.). Sem isso, "Solda" e "solda " viram
+  // categorias diferentes pro sistema e os filtros por categoria não batem
+  // certo com boa parte dos produtos.
   dadosOriginais.forEach(function (d) {
-    if (d.categoria && categoriasDisponiveis.indexOf(d.categoria) === -1) categoriasDisponiveis.push(d.categoria);
+    var bruta = (d.categoria || "").trim();
+    if (!bruta) { d.categoria = ""; return; }
+    var correspondente = categoriasDisponiveis.filter(function (c) {
+      return normalizar(c) === normalizar(bruta);
+    })[0];
+    d.categoria = correspondente || bruta;
+    if (categoriasDisponiveis.indexOf(d.categoria) === -1) categoriasDisponiveis.push(d.categoria);
   });
 
   var corpo = document.getElementById("corpo-tabela");
@@ -573,9 +583,9 @@
   }
 
   // Reordena as linhas já existentes no DOM (sem recriar nada, então quem
-  // está digitando em outra linha não perde o foco). Se nenhuma coluna foi
-  // clicada pra ordenar, a regra padrão vale: ativos primeiro, na ordem
-  // original, e os inativos vão pro final, também na ordem original.
+  // está digitando em outra linha não perde o foco). Os inativos SEMPRE vão
+  // pro final -- mesmo com uma coluna sendo ordenada, a ordenação só vale
+  // dentro de cada grupo (ativos entre si, inativos entre si).
   function ordenarLinhas() {
     var entradas = [];
     mapaLinhas.forEach(function (tr, index) {
@@ -588,6 +598,9 @@
     var direcao = ordenacaoAtual.direcao === "desc" ? -1 : 1;
 
     entradas.sort(function (a, b) {
+      // regra que nunca muda: ativo sempre antes de inativo
+      if (a.item.ativo !== b.item.ativo) return a.item.ativo ? -1 : 1;
+
       if (campo) {
         var va, vb;
         if (campo === "codigo") {
@@ -599,8 +612,7 @@
         if (va > vb) return 1 * direcao;
         return a.index - b.index;
       }
-      // ordem padrão: ativos antes de inativos, cada grupo na ordem original
-      if (a.item.ativo !== b.item.ativo) return a.item.ativo ? -1 : 1;
+      // sem coluna escolhida: mantém a ordem original dentro do grupo
       return a.index - b.index;
     });
 
