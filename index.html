@@ -108,7 +108,7 @@
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--gray-100);
     color:var(--navy-800);
-    padding-bottom:5.5rem;
+    padding-bottom:4.5rem;
   }
   .faixa-topo{height:5px;background:linear-gradient(90deg,var(--orange),var(--gold));}
 
@@ -219,20 +219,25 @@
   .vazio{grid-column:1/-1;text-align:center;padding:3rem 1rem;color:var(--navy-600);background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);}
   .sentinela{height:1px;}
 
-  .barra-carrinho{
-    position:fixed;bottom:0;left:0;right:0;z-index:100;
-    background:var(--navy-800);color:var(--white);
-    padding:.85rem 1.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;
-    box-shadow:0 -6px 18px rgba(0,0,0,.18);
+  .barra-carrinho{display:none;}
+
+  .carrinho-flutuante{
+    position:fixed;top:1rem;right:1rem;z-index:150;
+    width:52px;height:52px;border-radius:50%;border:none;
+    background:var(--navy-900);color:var(--white);
+    display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+    box-shadow:var(--shadow-md);cursor:pointer;
   }
-  .barra-carrinho strong{font-size:.92rem;font-weight:600;}
-  .btn-ver-orcamento{
-    background:linear-gradient(90deg,var(--orange),var(--gold));color:var(--navy-900);border:none;
-    padding:.7rem 1.3rem;border-radius:7px;font-weight:700;font-size:.9rem;cursor:pointer;white-space:nowrap;
+  .carrinho-flutuante:hover{filter:brightness(1.15);}
+  .carrinho-badge{
+    position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;padding:0 4px;
+    background:var(--orange);color:var(--navy-900);border-radius:999px;
+    font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--white);
   }
 
   .btn-topo{
-    position:fixed;right:1rem;bottom:5.2rem;z-index:90;width:42px;height:42px;border-radius:50%;
+    position:fixed;right:1rem;bottom:4.6rem;z-index:90;width:42px;height:42px;border-radius:50%;
     background:var(--white);border:1px solid var(--gray-200);box-shadow:var(--shadow-md);
     font-size:1.1rem;cursor:pointer;color:var(--navy-800);display:none;align-items:center;justify-content:center;
   }
@@ -263,8 +268,6 @@
   @media (max-width:480px){
     main.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem;}
     .produto-imagem-container{height:110px;}
-    .barra-carrinho{padding:.7rem .9rem;}
-    .barra-carrinho strong{font-size:.8rem;}
   }
 
   #area-impressao{display:none;}
@@ -289,8 +292,8 @@
     .pagina-foto-cheia{page-break-after:always;text-align:center;}
     .pagina-foto-cheia.contracapa{page-break-before:always;page-break-after:auto;}
     .pagina-foto-cheia img{width:100%;height:auto;display:block;}
-    .lista-pdf{display:grid;grid-template-columns:1fr 1fr;gap:.3rem 1.2rem;padding:0 6mm;}
-    .item-pdf{display:flex;gap:.5rem;align-items:center;border-bottom:1px solid var(--gray-200);padding:.3rem 0;break-inside:avoid;}
+    .lista-pdf{display:flex;flex-wrap:wrap;gap:.3rem 1.2rem;padding:0 6mm;}
+    .item-pdf{display:flex;gap:.5rem;align-items:center;border-bottom:1px solid var(--gray-200);padding:.3rem 0;break-inside:avoid;width:47%;}
     .item-pdf img{width:42px;height:42px;object-fit:contain;border:1px solid var(--gray-200);flex-shrink:0;}
     .item-pdf .sem-foto{
       width:42px;height:42px;border:1px solid var(--gray-200);flex-shrink:0;
@@ -302,15 +305,28 @@
 
 </style>
 <style>
-  .rodape-site{display:none;background:var(--navy-900);color:var(--gray-200);padding:2rem 1.25rem 1rem;margin-top:2rem;font-size:.85rem;}
-  .rodape-conteudo{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:2rem;justify-content:space-between;}
-  .rodape-coluna{display:flex;flex-direction:column;gap:.45rem;min-width:200px;}
-  .rodape-coluna strong{font-size:1rem;color:var(--white);margin-bottom:.2rem;}
-  .rodape-redes a{color:var(--gray-200);text-decoration:none;}
+  .rodape-site{
+    display:none;background:var(--navy-900);color:var(--gray-200);
+    padding:.65rem 1rem;font-size:.78rem;
+    position:fixed;left:0;right:0;bottom:0;z-index:120;
+    box-shadow:0 -4px 14px rgba(0,0,0,.2);
+  }
+  .rodape-conteudo{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;justify-content:center;align-items:center;}
+  .rodape-bloco{display:flex;flex-wrap:wrap;gap:.3rem .9rem;align-items:center;}
+  .rodape-bloco span.rodape-item{display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap;}
+  .rodape-redes a{color:var(--gray-200);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap;}
   .rodape-redes a:hover{color:var(--gold);text-decoration:underline;}
-  .rodape-creditos{max-width:1100px;margin:1.5rem auto 0;padding-top:1rem;border-top:1px solid var(--navy-800);text-align:center;font-size:.78rem;color:var(--gray-400);}
+  .rodape-vendedores a{color:var(--gray-200);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap;}
+  .rodape-vendedores a:hover{color:var(--gold);text-decoration:underline;}
+  .rodape-creditos{max-width:1200px;margin:.35rem auto 0;padding-top:.35rem;border-top:1px solid var(--navy-800);text-align:center;font-size:.68rem;color:var(--gray-400);}
   .rodape-creditos a{color:var(--gray-400);text-decoration:underline;}
+  .rodape-site svg{flex-shrink:0;}
   @media print{ .rodape-site{display:none !important;} }
+  @media (max-width:600px){
+    body{padding-bottom:7rem;}
+    .rodape-site{font-size:.72rem;padding:.55rem .7rem;}
+    .rodape-conteudo{gap:.3rem .8rem;}
+  }
 </style>
 </head>
 <body>
@@ -343,23 +359,24 @@
 
 <button class="btn-topo" id="btn-topo" aria-label="Voltar ao topo" title="Voltar ao topo">↑</button>
 
+<button class="carrinho-flutuante" id="carrinho-flutuante" aria-label="Ver orçamento">
+  🛒<span class="carrinho-badge" id="carrinho-badge" style="display:none;">0</span>
+</button>
+
 <div class="mensagem-flutuante" id="mensagem-flutuante" role="status" aria-live="polite"></div>
 
 
 <footer class="rodape-site" id="rodape-site">
   <div class="rodape-conteudo">
-    <div class="rodape-coluna" id="rodape-info"></div>
-    <div class="rodape-coluna rodape-redes" id="rodape-redes"></div>
+    <div class="rodape-bloco" id="rodape-endereco"></div>
+    <div class="rodape-bloco rodape-vendedores" id="rodape-vendedores"></div>
+    <div class="rodape-bloco rodape-redes" id="rodape-redes"></div>
   </div>
   <div class="rodape-creditos" id="rodape-creditos"></div>
 </footer>
 
 <div id="area-impressao" aria-hidden="true"></div>
 
-<div class="barra-carrinho">
-  <strong id="qtd-itens-barra">Nenhum produto selecionado</strong>
-  <button class="btn-ver-orcamento" id="btn-ver-orcamento">Ver orçamento</button>
-</div>
 
 <div class="modal" id="modal-orcamento">
   <div class="modal-content">
@@ -438,7 +455,7 @@
   var grid = document.getElementById("grid-produtos");
   var contador = document.getElementById("contador-busca");
   var campoPesquisa = document.getElementById("campo-pesquisa");
-  var barraQtd = document.getElementById("qtd-itens-barra");
+  var carrinhoBadge = document.getElementById("carrinho-badge");
   var modal = document.getElementById("modal-orcamento");
   var tbody = document.getElementById("lista-orcamento");
   var btnTopo = document.getElementById("btn-topo");
@@ -654,9 +671,12 @@
 
   function atualizarBarra() {
     var totalUn = carrinho.reduce(function (acc, i) { return acc + i.qtd; }, 0);
-    barraQtd.textContent = carrinho.length === 0
-      ? "Nenhum produto selecionado"
-      : carrinho.length + " produto(s) — " + totalUn + " un no orçamento";
+    if (totalUn > 0) {
+      carrinhoBadge.textContent = totalUn > 99 ? "99+" : totalUn;
+      carrinhoBadge.style.display = "flex";
+    } else {
+      carrinhoBadge.style.display = "none";
+    }
   }
 
   function renderizarTabela() {
@@ -725,7 +745,7 @@
     renderizarTabela();
   });
 
-  document.getElementById("btn-ver-orcamento").addEventListener("click", function () {
+  document.getElementById("carrinho-flutuante").addEventListener("click", function () {
     renderizarTabela();
     modal.classList.add("aberto");
   });
@@ -775,40 +795,62 @@
   btnTopo.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
 
 
+  // Deixa o número mais legível pra exibir: de "5534984264335" pra "(34) 98426-4335"
+  function formatarTelefoneExibicao(numero) {
+    var digitos = String(numero || "").replace(/\D/g, "");
+    if (digitos.length >= 12 && digitos.indexOf("55") === 0) digitos = digitos.slice(2);
+    if (digitos.length === 11) return "(" + digitos.slice(0, 2) + ") " + digitos.slice(2, 7) + "-" + digitos.slice(7);
+    if (digitos.length === 10) return "(" + digitos.slice(0, 2) + ") " + digitos.slice(2, 6) + "-" + digitos.slice(6);
+    return numero;
+  }
+
+  // Pequenos ícones (SVG embutido, sem depender de internet nem de fontes externas)
+  var ICONES_RODAPE = {
+    local: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 7 12 8 12s8-6.75 8-12c0-4.42-3.58-8-8-8zm0 10.5A2.5 2.5 0 1 1 12 7.5a2.5 2.5 0 0 1 0 5z"/></svg>',
+    telefone: '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.4 0 .8-.2 1.1L6.6 10.8z"/></svg>',
+    instagram: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2c-2.7 0-3.05.01-4.12.06-1.07.05-1.8.22-2.43.47-.66.26-1.22.6-1.77 1.16-.56.55-.9 1.11-1.16 1.77-.25.63-.42 1.36-.47 2.43C2 8.95 2 9.3 2 12s.01 3.05.06 4.12c.05 1.07.22 1.8.47 2.43.26.66.6 1.22 1.16 1.77.55.56 1.11.9 1.77 1.16.63.25 1.36.42 2.43.47C8.95 22 9.3 22 12 22s3.05-.01 4.12-.06c1.07-.05 1.8-.22 2.43-.47.66-.26 1.22-.6 1.77-1.16.56-.55.9-1.11 1.16-1.77.25-.63.42-1.36.47-2.43.05-1.07.06-1.42.06-4.12s-.01-3.05-.06-4.12c-.05-1.07-.22-1.8-.47-2.43-.26-.66-.6-1.22-1.16-1.77-.55-.56-1.11-.9-1.77-1.16-.63-.25-1.36-.42-2.43-.47C15.05 2.01 14.7 2 12 2zm0 5.05a4.95 4.95 0 1 1 0 9.9 4.95 4.95 0 0 1 0-9.9zm0 1.8a3.15 3.15 0 1 0 0 6.3 3.15 3.15 0 0 0 0-6.3zm5.15-2a1.15 1.15 0 1 1-2.3 0 1.15 1.15 0 0 1 2.3 0z"/></svg>',
+    facebook: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg>',
+    google: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 7 12 8 12s8-6.75 8-12c0-4.42-3.58-8-8-8zm0 10.5A2.5 2.5 0 1 1 12 7.5a2.5 2.5 0 0 1 0 5z"/></svg>',
+    whatsapp: '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3 .9.9-2.9-.2-.3A8 8 0 1 1 12 20zm4.4-5.9c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1s-.6.8-.7.9-.3.2-.5.1a6.5 6.5 0 0 1-1.9-1.2 7.1 7.1 0 0 1-1.3-1.6c-.1-.2 0-.4.1-.5l.4-.4c.1-.1.2-.3.2-.4s0-.3 0-.4-.5-1.2-.7-1.6-.4-.4-.5-.4h-.4c-.2 0-.4.1-.6.3a1.9 1.9 0 0 0-.6 1.4c0 .8.6 1.6.6 1.7.1.1 1.2 1.9 3 2.6 1.7.7 1.7.5 2 .4a1.6 1.6 0 0 0 1.1-.8c.1-.3.1-.5.1-.6z"/></svg>'
+  };
+
   function montarRodape() {
     var cfg = (typeof SITE_CONFIG !== "undefined") ? SITE_CONFIG : {};
     var rodapeEl = document.getElementById("rodape-site");
-    var infoEl = document.getElementById("rodape-info");
+    var enderecoEl = document.getElementById("rodape-endereco");
+    var vendedoresEl = document.getElementById("rodape-vendedores");
     var redesEl = document.getElementById("rodape-redes");
     var creditosEl = document.getElementById("rodape-creditos");
     var r = cfg.rodape || {};
     var temConteudo = false;
 
-    if (cfg.nome) {
-      var titulo = document.createElement("strong");
-      titulo.textContent = cfg.nome;
-      infoEl.appendChild(titulo);
-    }
+    // Endereço, por escrito
     if (r.endereco) {
-      var pEnd = document.createElement("p");
-      pEnd.textContent = "\uD83D\uDCCD " + r.endereco;
-      infoEl.appendChild(pEnd);
+      var spanEnd = document.createElement("span");
+      spanEnd.className = "rodape-item";
+      spanEnd.innerHTML = ICONES_RODAPE.local + " " + r.endereco;
+      enderecoEl.appendChild(spanEnd);
       temConteudo = true;
     }
-    if (Array.isArray(r.telefones)) {
-      r.telefones.forEach(function (tel) {
-        if (!tel) return;
-        var pTel = document.createElement("p");
-        pTel.textContent = "\uD83D\uDCDE " + tel;
-        infoEl.appendChild(pTel);
-        temConteudo = true;
-      });
-    }
 
+    // Vendedores: nome + número clicável, abre direto uma conversa no WhatsApp
+    (cfg.vendedores || []).forEach(function (v) {
+      if (!v || !v.numero) return;
+      var a = document.createElement("a");
+      a.href = "https://wa.me/" + v.numero;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.innerHTML = ICONES_RODAPE.whatsapp + " " + (v.nome ? v.nome + ": " : "") + formatarTelefoneExibicao(v.numero);
+      vendedoresEl.appendChild(a);
+      temConteudo = true;
+    });
+
+    // Redes sociais + página do Google -- endereço continua visível acima,
+    // então o link do Google aqui é só um atalho extra pra página/avaliações.
     var redes = [
-      { chave: "instagram", label: "Instagram", icone: "\uD83D\uDCF7" },
-      { chave: "facebook", label: "Facebook", icone: "\uD83D\uDCD8" },
-      { chave: "googleMaps", label: "Ver no Google", icone: "\uD83D\uDCCC" }
+      { chave: "instagram", label: "Instagram", icone: ICONES_RODAPE.instagram },
+      { chave: "facebook", label: "Facebook", icone: ICONES_RODAPE.facebook },
+      { chave: "googleMaps", label: "Google", icone: ICONES_RODAPE.google }
     ];
     redes.forEach(function (rede) {
       if (!r[rede.chave]) return;
@@ -816,7 +858,7 @@
       a.href = r[rede.chave];
       a.target = "_blank";
       a.rel = "noopener";
-      a.textContent = rede.icone + " " + rede.label;
+      a.innerHTML = rede.icone + " " + rede.label;
       redesEl.appendChild(a);
       temConteudo = true;
     });
