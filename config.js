@@ -52,21 +52,22 @@ var SITE_CONFIG = {
     imagemContracapa: "img/contracapa.jpg"
   },
 
-  // Rodapé do site (endereço, telefones, redes sociais, Google)
+  // Rodapé do site (endereço, redes sociais, Google). Os telefones dos
+  // vendedores aparecem automaticamente no rodapé, clicáveis pro WhatsApp --
+  // não precisa repetir aqui, eles vêm direto da lista "vendedores" acima.
   // Deixe vazio ("") o que não quiser mostrar -- o rodapé se ajusta sozinho.
   rodape: {
     endereco: "",
-    telefones: ["(34) 98426-4335", "(34) 99870-8577", "(34) 98827-0835"],       // ex: ["(34) 99999-9999", "(34) 3333-3333"]
-    instagram: "https://www.instagram.com/topmixudi/",       // ex: "https://instagram.com/suaempresa"
+    instagram: "",       // ex: "https://instagram.com/suaempresa"
     facebook: "",        // ex: "https://facebook.com/suaempresa"
-    googleMaps: "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhob00yUndOSEl6GAo"        // ex: link "Ver no Google" (Google Maps ou Google Meu Negócio)
+    googleMaps: ""        // ex: link da página do Google (Google Maps ou Google Meu Negócio)
   },
 
   // Assinatura de quem desenvolveu o catálogo (aparece no rodapé do site)
   creditos: "Catálogo desenvolvido por WSARAMAGO",
   // Se preencher um link aqui (WhatsApp, Instagram etc.), a assinatura acima
   // vira um link clicável. Deixe "" para aparecer só como texto.
-  creditosLink: "https://wa.me/message/A7BOFCT2SGZOH1",
+  creditosLink: "",
 
   // Trava simples de acesso ao admin.html (NÃO é segurança de verdade --
   // é só pra evitar que alguém que ache o link mexa sem querer no painel.
